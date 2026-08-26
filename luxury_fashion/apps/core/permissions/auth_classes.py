@@ -2,63 +2,39 @@
 Auth Classes - Classes de autenticação com permissões embutidas.
 """
 from ninja_jwt.authentication import JWTAuth
-from beauty_formula.apps.core.exceptions import PermissionDenied
-from beauty_formula.apps.core.permissions.roles import (
+from luxury_fashion.apps.core.exceptions import PermissionDenied
+from luxury_fashion.apps.core.permissions.roles import (
     has_any_role,
     is_admin,
     is_active,
     is_client,
-    is_employee,
     is_verified,
 )
-from beauty_formula.apps.accounts.models.user import User
+from luxury_fashion.apps.accounts.models.user_model import User
 
-DEFAULT_EMPLOYEE_PHOTO = "default/employee_img.jpeg"
 DEFAULT_CLIENT_PHOTO = "default/client_img.jpg"
 
-
-
-class EmployeeOnlyAuth(JWTAuth):
-    def authenticate(self, request, token):
-        user = super().authenticate(request, token)
-        if user and not is_admin(user) and not is_verified(user):
-            raise PermissionDenied("Verifique seu e-mail para acessar.")
-        if user and not is_admin(user) and not is_employee(user):
-            raise PermissionDenied("Apenas funcionários podem acessar este recurso.")
-        return user
-
-class EmployeeCompleteProfileAuth(JWTAuth):
+class ClientCompleteProfileAuth(JWTAuth):
     def authenticate(self, request, token):
         user = super().authenticate(request, token)
 
         if not user:
             return None
-        if not is_admin(user) and not is_employee(user):
-            raise PermissionDenied("Apenas funcionários podem acessar este recurso.")
+        if not is_admin(user) and not is_client(user):
+            raise PermissionDenied("Apenas clientes podem acessar este recurso.")
 
-        employee = getattr(user, "employee_profile", None)
-        if not employee:
-            raise PermissionDenied("Usuário não possui funcionário vinculado.")
+        client = getattr(user, "cliente_profile", None)
+        if not client:
+            raise PermissionDenied("Usuário não possui clientes vinculado.")
 
-        # OBS: os campos abaixo precisam bater com os campos reais do model
-        # Employee (apps/accounts/models/employee.py). Antes checava
-        # `full_name`, `cnpj` e `banner`, que nunca existiram no model —
-        # essa classe quebrava com AttributeError sempre que fosse usada.
-        # Checa first_name/last_name direto (não `get_full_name()`, que
-        # sempre cai num fallback tipo "Employee {id}" e nunca acusaria
-        # nome faltando).
         required_fields = {
-            "Nome": employee.first_name,
-            "Sobrenome": employee.last_name,
-            "Telefone": employee.phone,
-            "Biografia": employee.bio,
-            "Instagram": employee.instagram,
+            "Nome": client.first_name,
+            "Sobrenome": client.last_name,
+            "CPF": client.cpf,
+            "Endereço": client.addresses.exists(),
         }
 
         missing = [field for field, value in required_fields.items() if not value]
-
-        if employee.photo == DEFAULT_EMPLOYEE_PHOTO:
-            missing.append("Foto (não pode ser a foto padrão)")
 
         if missing:
             missing_count = len(missing)
@@ -69,12 +45,8 @@ class EmployeeCompleteProfileAuth(JWTAuth):
                 f"{missing_count} campo(s) obrigatório(s) faltando: {fields_list}"
             )
 
-        # OBS: `employee.is_verified` também não existe no model — a
-        # verificação de "confiável" é sobre o User (is_trusty + is_active),
-        # não sobre o Employee. Usa o helper `is_verified(user)` já
-        # importado no topo do arquivo, igual as outras classes daqui.
         if not is_verified(user):
-            raise PermissionDenied("O funcionário precisa ser verificado para acessar.")
+            raise PermissionDenied("O cliente precisa ser verificado para acessar.")
         return user
 
 

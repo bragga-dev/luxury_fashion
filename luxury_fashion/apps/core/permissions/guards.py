@@ -4,15 +4,13 @@ Guards - Funções que bloqueiam ou permitem acesso.
 from typing import Callable, List, Any, Optional, Union
 from functools import wraps
 
-from beauty_formula.apps.accounts.schemas.user_schema import UserRoleEnum  
-from beauty_formula.apps.core.exceptions.permissions import PermissionDenied
-from beauty_formula.apps.core.permissions.roles import (
+from luxury_fashion.apps.accounts.schemas.user_schema import UserRoleEnum  
+from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
+from luxury_fashion.apps.core.permissions.roles import (
     is_admin, 
     is_active, 
     is_verified,
-    is_employee,
     is_client,
-    is_employee_owner,
     is_client_owner,
     is_staff,
 )
@@ -144,23 +142,6 @@ def require_staff(user) -> None:
     
     if not is_staff(user):
         raise PermissionDenied("Acesso restrito à equipe administrativa.")
-
-
-def require_employee_or_admin(user) -> None:
-    """
-    Requer que o usuário seja funcionário OU admin.
-    
-    Args:
-        user: Usuário autenticado
-    
-    Raises:
-        PermissionDenied: Se não for funcionário nem admin
-    """
-    if is_admin(user):
-        return
-    
-    if not is_employee(user):
-        raise PermissionDenied("Acesso restrito a funcionários.")
 
 
 def require_client_or_admin(user) -> None:
@@ -297,13 +278,6 @@ def require_owner_or_admin(user, obj, owner_check: Callable) -> None:
         raise PermissionDenied("Você não tem permissão para acessar este recurso.")
 
 
-def require_verified_employee(user) -> None:
-    """
-    Requer que o usuário seja funcionário verificado.
-    """
-    check_permission(user, is_employee, is_verified, message="Acesso restrito a funcionários verificados.")
-
-
 def require_verified_client(user) -> None:
     """
     Requer que o usuário seja cliente verificado.
@@ -322,7 +296,6 @@ def api_guard(guard_func: Callable):
     Exemplos:
         @api_guard(require_employee)
         @api.get("/employee-only")
-        def employee_endpoint(request):
             ...
     """
     def decorator(func):
@@ -334,31 +307,3 @@ def api_guard(guard_func: Callable):
     return decorator
 
 
-__all__ = [
-    # Guards base
-    "check_permission",
-    "check_object_permission",
-    
-    # Guards específicos
-    "require_active",
-    "require_verified",
-    "require_staff",
-    "require_employee_or_admin",
-    "require_client_or_admin",
-    
-    # Factory e verificadores
-    "require_role",
-    "require_employee",
-    "require_client",
-    "require_admin",
-    
-    # Decorators
-    "guard",
-    "guard_multiple",
-    "api_guard",
-    
-    # Guards compostos
-    "require_owner_or_admin",
-    "require_verified_employee",
-    "require_verified_client",
-]
