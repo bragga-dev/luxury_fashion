@@ -16,14 +16,12 @@ Uso:
 """
 
 import math
-from typing import TypeVar, Generic, List, Callable, Any
-from ninja import Schema
+from typing import TypeVar, Callable, Any
 from django.db.models import QuerySet
 
 T = TypeVar("T")
-from beauty_formula.apps.core.schemas.deafult_schema import PageOut
+from luxury_fashion.apps.core.schemas.deafult_schema import PageOut
 
-# Limites de segurança
 PAGE_SIZE_DEFAULT = 20
 PAGE_SIZE_MAX = 100
 
