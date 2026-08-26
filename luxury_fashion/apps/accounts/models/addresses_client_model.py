@@ -56,6 +56,7 @@ class AddressesClient(models.Model):
     city = models.CharField(_("Cidade"), max_length=255)
     state = models.CharField(_("Estado"), max_length=2, choices=BrazilianState)
     country = models.CharField(_("País"), max_length=100, default="Brasil")
+    is_preferential = models.BooleanField(_("Preferencial"), default=True)
 
     def __str__(self):
         return f"{self.street} {self.number}, {self.neighborhood}, {self.city} {self.state} {self.cep}"

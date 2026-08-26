@@ -80,8 +80,11 @@ class ClientCreateIn(Schema):
     @classmethod
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         if v:
-            cleaned = re.sub(r'[^\d+]', '', v)
-            if len(cleaned) < 10: 
+            try:
+                parsed = parse(v, "BR")
+            except NumberParseException:
+                raise ValueError("Número de telefone inválido.")
+            if not is_valid_number(parsed):
                 raise ValueError("Número de telefone inválido.")
         return v
 
@@ -115,9 +118,10 @@ class ClientUpdateIn(Schema):
     @classmethod
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         if v:
-            cleaned = re.sub(r'[^\d+]', '', v)
-            if len(cleaned) < 10: 
+            try:
+                parsed = parse(v, "BR")
+            except NumberParseException:
+                raise ValueError("Número de telefone inválido.")
+            if not is_valid_number(parsed):
                 raise ValueError("Número de telefone inválido.")
         return v
-
-
