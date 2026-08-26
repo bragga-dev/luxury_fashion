@@ -1,17 +1,17 @@
-import re
 import uuid
-
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from luxury_fashion.apps.core.validators.image_validator import validate_image_file
-from luxury_fashion.apps.accounts.models.user import User
+from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.constants.gender import Gender    
+from luxury_fashion.apps.core.validators.image_validator import validate_image_file    
 from phonenumber_field.modelfields import PhoneNumberField
 from phonenumbers import parse, format_number, PhoneNumberFormat
 from datetime import timezone
 from django.utils import timezone 
 
+from luxury_fashion.apps.core.validators.validate_cpf_or_cnpj import validate_cpf
 
 def client_photo_path(instance, filename):
     ext = filename.rsplit(".", 1)[-1].lower()
@@ -33,6 +33,7 @@ class Client(models.Model):
     birth_date = models.DateField(_("Data de nascimento"), blank=True, null=True)
     photo = models.ImageField(upload_to=client_photo_path, default=DEFAULT_CLIENT_PHOTO, blank=True, null=True, validators=[validate_image_file], help_text=_('Formatos aceitos: jpg, jpeg ou png. Máx: 5MB.'))
     asaas_customer_id = models.CharField(_("ID do cliente na Asaas"), max_length=50, blank=True, null=True, db_index=True)
+    cpf = models.CharField(_("CPF"), max_length=11, blank=True, null=True, validators=[validate_cpf])
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.user.email})"

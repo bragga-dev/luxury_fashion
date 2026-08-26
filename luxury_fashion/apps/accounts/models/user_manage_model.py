@@ -2,7 +2,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .constants import ROLE_ADMIN, ROLE_CLIENT
+from luxury_fashion.apps.accounts.models.constants_model import ROLE_ADMIN, ROLE_CLIENT
 
 
 class UserManager(BaseUserManager):
@@ -24,7 +24,7 @@ class UserManager(BaseUserManager):
             extra_fields.setdefault('is_trusty', True)
 
         # ─────────────────────────────────────────────
-        # CLIENT e EMPLOYEE — precisam confirmação/aprovação
+        # CLIENT 
         # ─────────────────────────────────────────────
         else:
             extra_fields.setdefault('is_staff', False)
@@ -44,7 +44,7 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, password=None, **extra_fields):
         """
-        Cria CLIENT ou EMPLOYEE.
+        Cria CLIENT .
         ADMIN só pode ser criado via create_superuser.
         """
         role = extra_fields.get('role', ROLE_CLIENT)
