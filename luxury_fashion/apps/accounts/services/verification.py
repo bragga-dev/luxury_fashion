@@ -6,18 +6,18 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
-from luxury_fashion.apps.accounts.models.user import User
+from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.exceptions import InvalidToken
 from luxury_fashion.apps.accounts.repositories.user_repository import activate_user
 from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_id
 
 
-def build_verification_url(user) -> str:
+def build_verification_url(user: User) -> str:
     uid, token = generate_uid_token(user)
     return f"{settings.BACKEND_URL}/api/auth/verify-email/{uid}/{token}"
 
 
-def build_password_reset_url(user) -> str:
+def build_password_reset_url(user: User) -> str:
     uid, token = generate_uid_token(user)
     return f"{settings.FRONTEND_URL}/redefinir-senha?uid={uid}&token={token}"
 
