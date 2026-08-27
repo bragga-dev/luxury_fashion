@@ -12,5 +12,5 @@ class ClientNotFoundError(Exception):
 
 
 class ClientNotActiveError(Exception):
-    """Exceção lançada quando o client não está ativo na funcionário."""
+    """Exceção lançada quando o client não está ativo."""
     pass

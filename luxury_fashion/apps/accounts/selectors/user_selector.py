@@ -158,7 +158,6 @@ def search_users(query: str):
 def search_users_by_role_and_status(role: str, is_active: bool) -> QuerySet[User]:
     """
     Filtra usuários por role e status.
-    Ex: todos os clien ativos, todas as funcionários inativas.
     """
     return User.objects.filter(role=role, is_active=is_active)
 

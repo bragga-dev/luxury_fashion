@@ -126,7 +126,7 @@ class AllRolesAuth(_CombinedRoleAuth):
 
 
 class AdminOrClientAuth(_CombinedRoleAuth):
-    """Libera acesso apenas para administradores e clientes (funcionários NÃO passam)."""
+    """Libera acesso apenas para administradores e clientes."""
     allowed_roles = [User.UserRole.ADMIN, User.UserRole.CLIENT]
     denied_message = "Apenas administradores ou clientes podem acessar este recurso."
 
