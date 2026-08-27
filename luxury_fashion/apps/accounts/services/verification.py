@@ -1,15 +1,15 @@
 from django.conf import settings
-from beauty_formula.apps.core.tokens.signing import generate_uid_token
+from luxury_fashion.apps.core.tokens.signing import generate_uid_token
 
 
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
-from beauty_formula.apps.accounts.models.user import User
-from beauty_formula.apps.core.exceptions import InvalidToken
-from beauty_formula.apps.accounts.repositories.user_repository import activate_user
-from beauty_formula.apps.accounts.selectors.user_selector import get_user_by_id
+from luxury_fashion.apps.accounts.models.user import User
+from luxury_fashion.apps.core.exceptions import InvalidToken
+from luxury_fashion.apps.accounts.repositories.user_repository import activate_user
+from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_id
 
 
 def build_verification_url(user) -> str:

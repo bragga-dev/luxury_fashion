@@ -36,7 +36,7 @@ class Client(models.Model):
     cpf = models.CharField(_("CPF"), max_length=11, blank=True, null=True, validators=[validate_cpf])
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.user.email})"
+        return f"{self.first_name} {self.last_name} ({self.user_id.email})"
     
     class Meta:
         verbose_name = _("Cliente")
@@ -59,7 +59,7 @@ class Client(models.Model):
 
     def get_full_name(self):
         full_name = " ".join(filter(None, [self.first_name, self.last_name])).strip()
-        return full_name or self.username or f"Client {self.id}"
+        return full_name or self.username or f"Client {self.client_id}"
     
     @staticmethod
     def normalize_phone(phone_str: str) -> str:

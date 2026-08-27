@@ -1,10 +1,4 @@
-"""
-Admin — gestão de usuários (leitura). As ações de escrita (cadastro de
-funcionário, promoção de cliente, ativação/desativação) já existem em
-`/auth/` (register-employee, promote-client-to-employee, deactive-user,
-reactivate-user) e continuam lá para não duplicar rotas de mutação de
-User; este router cobre apenas listagem/detalhe para o painel admin.
-"""
+
 import uuid
 from typing import Optional
 

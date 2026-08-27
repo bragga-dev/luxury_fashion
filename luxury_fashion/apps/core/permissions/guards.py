@@ -26,24 +26,7 @@ def check_permission(
     message: Optional[str] = None,
     allow_admin_bypass: bool = True
 ) -> None:
-    """
-    Verifica se o usuário atende a TODAS as condições.
-    
-    Args:
-        user: Usuário autenticado
-        *checks: Funções de verificação que recebem (user)
-        message: Mensagem personalizada de erro
-        allow_admin_bypass: Se True, admin passa direto
-    
-    Raises:
-        PermissionDenied: Se alguma verificação falhar
-    
-    Exemplos:
-        check_permission(user, is_employee)
-        check_permission(user, is_client, is_verified)
-        check_permission(user, is_employee, message="Apenas funcionários")
-    """
-    # Admin bypass - superusuário tem acesso total
+    """ Verifica se o usuário atende a TODAS as condições."""
     if allow_admin_bypass and is_admin(user):
         return
     
@@ -61,19 +44,7 @@ def check_object_permission(
     message: Optional[str] = None,
     allow_admin_bypass: bool = True
 ) -> None:
-    """
-    Verifica permissões que envolvem um objeto específico.
-    
-    Args:
-        user: Usuário autenticado
-        obj: Objeto a ser verificado (Employee, Client, etc.)
-        *checks: Funções que recebem (user, obj)
-        message: Mensagem personalizada de erro
-    
-    Exemplos:
-        check_object_permission(user, employee, is_employee_owner)
-        check_object_permission(user, client, is_client_owner, is_verified)
-    """
+    """ Verifica permissões que envolvem um objeto específico. """
     if allow_admin_bypass and is_admin(user):
         return
     
@@ -166,20 +137,7 @@ def require_client_or_admin(user) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def require_role(role: Union[str, 'UserRoleEnum'], custom_message: Optional[str] = None):
-    """
-    Factory que cria guards para roles específicas.
-    
-    Args:
-        role: Role requerida (string ou Enum)
-        custom_message: Mensagem personalizada de erro
-    
-    Returns:
-        Callable: Guard function
-    
-    Exemplos:
-        require_employee = require_role("employee")
-        require_admin = require_role("admin", "Apenas administradores")
-    """
+    """Factory que cria guards para roles específicas. """
     role_value = role.value if hasattr(role, 'value') else str(role)
     
     def guard(user) -> None:
@@ -196,8 +154,6 @@ def require_role(role: Union[str, 'UserRoleEnum'], custom_message: Optional[str]
     return guard
 
 
-# Criando verificadores específicos
-require_employee = require_role("employee")
 require_client = require_role("client")
 require_admin = require_role("admin")
 
@@ -207,20 +163,7 @@ require_admin = require_role("admin")
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def guard(guard_func: Callable):
-    """
-    Decorator para aplicar guards em views.
-    
-    Args:
-        guard_func: Função guard que recebe user
-    
-    Returns:
-        Decorated view
-    
-    Exemplos:
-        @guard(require_employee)
-        def my_view(request):
-            ...
-    """
+    """ Decorator para aplicar guards em views. """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -231,20 +174,7 @@ def guard(guard_func: Callable):
 
 
 def guard_multiple(*guards: Callable):
-    """
-    Decorator para aplicar múltiplos guards em views.
-    
-    Args:
-        *guards: Funções guard
-    
-    Returns:
-        Decorated view
-    
-    Exemplos:
-        @guard_multiple(require_active, require_employee)
-        def my_view(request):
-            ...
-    """
+    """ Decorator para aplicar múltiplos guards em views. """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -261,16 +191,7 @@ def guard_multiple(*guards: Callable):
 
 def require_owner_or_admin(user, obj, owner_check: Callable) -> None:
     """
-    Requer que o usuário seja admin OU dono do objeto.
-    
-    Args:
-        user: Usuário autenticado
-        obj: Objeto (Employee, Client, etc.)
-        owner_check: Função que verifica ownership (ex: is_employee_owner)
-    
-    Raises:
-        PermissionDenied: Se não for admin nem dono
-    """
+    Requer que o usuário seja admin OU dono do objeto.  """
     if is_admin(user):
         return
     
@@ -292,11 +213,6 @@ def require_verified_client(user) -> None:
 def api_guard(guard_func: Callable):
     """
     Decorator para aplicar guards em endpoints Ninja.
-    
-    Exemplos:
-        @api_guard(require_employee)
-        @api.get("/employee-only")
-            ...
     """
     def decorator(func):
         @wraps(func)

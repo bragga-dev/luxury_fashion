@@ -26,7 +26,7 @@ class ClientProfileOut(Schema):
     @classmethod
     def from_orm(cls, client: Client) -> "ClientProfileOut":
         return cls(
-            id=client.id,
+            client_id=client.client_id,
             username=client.username,
             first_name=client.first_name,
             last_name=client.last_name,

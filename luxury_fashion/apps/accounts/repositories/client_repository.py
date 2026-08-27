@@ -11,7 +11,7 @@ from luxury_fashion.apps.core.tasks.media import delete_old_media_file
 
 
 def create_client(
-    user: User,
+    user_id: User,
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     username: Optional[str] = None,
@@ -33,7 +33,7 @@ def create_client(
     }
     fields = {k: v for k, v in fields.items() if v is not None}
 
-    client = Client(user=user, **fields)
+    client = Client(user_id=user_id, **fields)
     client.save()
     return client
 

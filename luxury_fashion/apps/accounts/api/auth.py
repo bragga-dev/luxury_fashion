@@ -89,7 +89,6 @@ from luxury_fashion.apps.core.exceptions import (
 from luxury_fashion.apps.core.permissions.auth_classes import (
     AdminOnlyAuth, 
     ClientOnlyAuth,
-    EmployeeOrClientAuth,
     AllRolesAuth,
     AdminOrClientAuth,
     )
@@ -348,7 +347,7 @@ def change_password_router(request, payload: ChangePasswordIn):
 @router.delete(
     "/delete-account",
     response={200: MessageOut, 400: MessageOut},
-    auth=EmployeeOrClientAuth(),
+    auth=ClientOnlyAuth(),
     summary="Exclui a própria conta",
     description=(
         "Exclusão de conta pelo próprio usuário (LGPD — direito de eliminação). "

@@ -56,7 +56,7 @@ def get_inactive_users() -> QuerySet[User]:
 
 
 def get_users_by_role(role: str) -> QuerySet[User]:
-    """Retorna usuários por role. Use as constantes: ROLE_CLIENT, ROLE_EMPLOYEE, ROLE_ADMIN."""
+    """Retorna usuários por role. Use as constantes: ROLE_CLIENT,  ROLE_ADMIN."""
     return User.objects.filter(role=role)
 
 
@@ -101,10 +101,6 @@ def get_active_users_by_role(role: str) -> QuerySet[User]:
 
 
 def get_user_with_related(user_id: uuid.UUID) -> Optional[User]:
-    """
-    Busca usuário com select_related para employee_profile ou client_profile.
-    Evita N+1 quando você vai acessar user.client_profile ou user.employee_profile logo depois.
-    """
     return (
         User.objects
         .select_related("client_profile")

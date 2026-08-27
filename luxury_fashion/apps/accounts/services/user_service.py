@@ -59,10 +59,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_current_user_profile(user_id: uuid.UUID) -> MeOut:
-    """
-    Monta o retorno de GET /auth/me: usuário autenticado + profile
-    correspondente à sua role (client/employee/nenhum, no caso de admin).
-    """
+   
     user = get_user_with_related(user_id)
     if not user:
         raise UserNotFound("Usuário não encontrado.")
@@ -182,7 +179,7 @@ def delete_own_account(user: User, password: str) -> None:
     Exclusão definitiva da conta pelo próprio usuário (LGPD — direito de eliminação).
  
     Hard-delete de verdade: apaga o registro de User do banco (o que remove
-    em cascata o profile de Client/Employee via OneToOne). Contas admin não
+    em cascata o profile de Client via OneToOne). Contas admin não
     podem ser excluídas por este endpoint — só via ação administrativa direta.
     """
     if user.role == User.UserRole.ADMIN:
@@ -193,10 +190,7 @@ def delete_own_account(user: User, password: str) -> None:
  
     profile = None
     if user.role == User.UserRole.CLIENT:
-        profile = getattr(user, "client_profile", None)
-    elif user.role == User.UserRole.EMPLOYEE:
-        profile = getattr(user, "employee_profile", None)
- 
+        profile = getattr(user, "client_profile", None) 
     if profile and profile.photo:
         default_photo = Client.photo.field.default == isinstance(profile, Client)
         if profile.photo.name != default_photo:

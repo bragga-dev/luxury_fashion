@@ -34,8 +34,8 @@ class ClientOut(Schema):
     @classmethod
     def from_orm(cls, client: Client) -> "ClientOut":
         return cls(
-            id=client.id,
-            user=UserOut.from_orm(client.user),
+            client_id=client.client_id,
+            user=UserOut.from_orm(client.user_id),
             username=client.username,
             first_name=client.first_name,
             last_name=client.last_name,

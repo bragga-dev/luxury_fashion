@@ -122,7 +122,7 @@ class PasswordResetConfirmIn(Schema):
 # ── User ─────────────────────────────────────────────────────────────────────
 
 class UserOut(Schema):
-    id:          uuid.UUID
+    user_id:     uuid.UUID
     email:       str
     role:        UserRoleEnum
     is_trusty:   bool
@@ -135,7 +135,7 @@ class UserOut(Schema):
     @classmethod
     def from_orm(cls, user: User) -> "UserOut":
         return cls(
-            id=user.id,
+            user_id=user.user_id,
             email=user.email,
             role=user.role,
             is_trusty=user.is_trusty,
@@ -147,12 +147,8 @@ class UserOut(Schema):
 
 
 class UserAdminOut(Schema):
-    """
-    Visão administrativa de um usuário — inclui nome de exibição e foto do
-    profile (client ou employee) quando existir, para montar tabelas/listas
-    no painel admin sem exigir uma segunda chamada por usuário.
-    """
-    id:           uuid.UUID
+   
+    user_id:      uuid.UUID
     email:        str
     role:         UserRoleEnum
     role_label:   Optional[str] = None
@@ -165,7 +161,7 @@ class UserAdminOut(Schema):
 
     @classmethod
     def from_orm(cls, user: User) -> "UserAdminOut":
-        profile = getattr(user, "client_profile", None) or getattr(user, "employee_profile", None)
+        profile = getattr(user, "client_profile", None) 
         display_name = None
         photo_url = None
         if profile is not None:
@@ -173,7 +169,7 @@ class UserAdminOut(Schema):
             photo_url = profile.photo_url
 
         return cls(
-            id=user.id,
+            user_id=user.user_id,
             email=user.email,
             role=user.role,
             role_label=user.get_role_display(),

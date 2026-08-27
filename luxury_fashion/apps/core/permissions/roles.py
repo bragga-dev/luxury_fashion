@@ -58,11 +58,11 @@ def is_staff(user: User) -> bool:
 
 def is_owner(user: User, resource_user_id) -> bool:
     """Verifica se o usuário é o dono do recurso (pelo user_id)."""
-    return str(user.id) == str(resource_user_id)
+    return str(user.user_id) == str(resource_user_id)
 
 def is_client_owner(user: User, client) -> bool:
     """Verifica se o usuário é o dono de um recurso da Barbearia."""
-    return user == client.user
+    return user == client.user_id
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -7,7 +7,6 @@ __all__ = [
     "require_active",
     "require_verified",
     "require_staff",
-    "require_employee_or_admin",
     "require_client_or_admin",
     
     # Factory e verificadores
