@@ -1,6 +1,6 @@
 import uuid
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 from ninja import Schema, Field
 from pydantic import field_validator
 
@@ -76,14 +76,16 @@ class AddressesOut(Schema):
 
 class AddressesCreateIn(Schema):
     client_id: uuid.UUID
-    cep: Optional[str]
-    street: Optional[str]
-    number: Optional[str]
-    complement: Optional[str] 
-    neighborhood: Optional[str]
-    city: Optional[str]
-    state: BrazilianStateEnum
-    country: Optional[str] 
+    cep: Optional[str] = None
+    street: Optional[str] = None
+    number: Optional[str] = None
+    complement: Optional[str]  = None
+    neighborhood: Optional[str] = None
+    city: Optional[str] = None 
+    state: BrazilianStateEnum = None
+    country: Optional[str] = None
 
 
 
+class AddressesList(Schema):
+    items: list[AddressesOut]
