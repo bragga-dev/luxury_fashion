@@ -305,18 +305,21 @@ def verify_email_endpoint_router(request, uidb64: str, token: str):
         redirect_url = f"{settings.FRONTEND_URL}/verificacao-concluida?status=error&message={str(e)}"
         return HttpResponseRedirect(redirect_url)
     
-@router.post("/resend-verification", response={200: MessageOut, 404: MessageOut}, summary="Reenviar email de verificação", auth=None, )
+@router.post("/resend-verification", response={200: MessageOut}, summary="Reenviar email de verificação", auth=None, )
 @ratelimit(key="ip", rate="3/h", block=True,)
 def resend_verification_email_router(request, email: str):
     """
     Reenvia o email de verificação para um usuário não verificado.
-    """    
+
+    Sempre responde 200 com a mesma mensagem, exista ou não o e-mail,
+    e mesmo se já estiver verificado — mesma lógica anti-enumeração
+    do password-reset/request.
+    """
     user = get_user_by_email(email)
-    if not user or user.is_active:
-        return 404, {"detail": "Usuário não encontrado ou já verificado."}
-    
-    send_verification_email.delay(user.pk)
-    return 200, {"detail": "Email de verificação reenviado com sucesso."}
+    if user and not user.is_active:
+        send_verification_email.delay(user.pk)
+
+    return 200, {"detail": "Se este e-mail estiver cadastrado e pendente de verificação, você receberá as instruções em breve."}
 
 
 
@@ -355,7 +358,7 @@ def change_password_router(request, payload: ChangePasswordIn):
     description=(
         "Exclusão de conta pelo próprio usuário (LGPD — direito de eliminação). "
         "Exige confirmação de senha. Não é um hard-delete: o registro é mantido "
-        "para preservar vínculos (agendamentos, pagamentos, etc.), mas todo dado "
+        "para preservar vínculos (pedidos, pagamentos, etc.), mas todo dado "
         "pessoal do perfil é apagado/anonimizado, a senha se torna inutilizável "
         "e todas as sessões são revogadas imediatamente."
     ),

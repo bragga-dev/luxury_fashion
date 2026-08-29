@@ -61,7 +61,7 @@ def is_owner(user: User, resource_user_id) -> bool:
     return str(user.user_id) == str(resource_user_id)
 
 def is_client_owner(user: User, client) -> bool:
-    """Verifica se o usuário é o dono de um recurso da Barbearia."""
+    """Verifica se o usuário é o dono de um recurso da loja."""
     return user == client.user_id
 
 
@@ -77,5 +77,3 @@ def has_any_role(user: User, roles: list) -> bool:
 def has_all_roles(user: User, roles: list) -> bool:
     """Verifica se o usuário tem todas as roles especificadas."""
     return all(user.role == role for role in roles)
-
-

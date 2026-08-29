@@ -52,7 +52,6 @@ from luxury_fashion.apps.core.exceptions.user import UserAlreadyExists
 from luxury_fashion.apps.core.exceptions.user import UserNotFound
 from luxury_fashion.apps.core.oauth.google import verify_google_id_token
 from luxury_fashion.apps.core.tokens.jwt import make_tokens, revoke_all_tokens
-from luxury_fashion.apps.core.utils.generate_password import generate_temp_password
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +204,7 @@ def export_user_data(user_id: uuid.UUID) -> dict:
     """
     Monta o export dos dados pessoais do usuário (LGPD — direito de portabilidade).
     Cobre os dados do app accounts (conta + perfil). Se/quando existirem dados
-    de outros domínios ligados ao usuário (agendamentos, pagamentos, etc.),
+    de outros domínios ligados ao usuário (pedidos, pagamentos, etc.),
     devem ser agregados aqui.
     """
     user = get_user_with_related(user_id)

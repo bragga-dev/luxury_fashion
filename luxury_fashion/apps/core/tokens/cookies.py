@@ -15,7 +15,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from ninja_jwt.settings import api_settings
 
-REFRESH_COOKIE_NAME = "fb_refresh_token"
+REFRESH_COOKIE_NAME = "eluxo_refresh_token"
 REFRESH_COOKIE_PATH = "/api/auth"
 
 

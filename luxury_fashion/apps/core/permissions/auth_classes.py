@@ -23,7 +23,7 @@ class ClientCompleteProfileAuth(JWTAuth):
         if not is_admin(user) and not is_client(user):
             raise PermissionDenied("Apenas clientes podem acessar este recurso.")
 
-        client = getattr(user, "cliente_profile", None)
+        client = getattr(user, "client_profile", None)
         if not client:
             raise PermissionDenied("Usuário não possui clientes vinculado.")
 
@@ -129,4 +129,3 @@ class AdminOrClientAuth(_CombinedRoleAuth):
     """Libera acesso apenas para administradores e clientes."""
     allowed_roles = [User.UserRole.ADMIN, User.UserRole.CLIENT]
     denied_message = "Apenas administradores ou clientes podem acessar este recurso."
-

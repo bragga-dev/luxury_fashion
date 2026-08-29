@@ -3,13 +3,13 @@ from luxury_fashion.apps.core.tokens.signing import generate_uid_token
 
 
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
 from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.exceptions import InvalidToken
 from luxury_fashion.apps.accounts.repositories.user_repository import activate_user
-from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_id
 
 
 def build_verification_url(user: User) -> str:
@@ -29,9 +29,9 @@ def verify_email(uidb64: str, token: str) -> User:
     """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = get_user_by_id(user_id=uid)
+        user = User.objects.get(pk=uid)
 
-    except (User.DoesNotExist, ValueError, TypeError, OverflowError,) as e:
+    except (User.DoesNotExist, ValidationError, ValueError, TypeError, OverflowError,) as e:
         raise InvalidToken(f"Link inválido ou usuário não encontrado: {e}")
 
     if not default_token_generator.check_token(user, token):

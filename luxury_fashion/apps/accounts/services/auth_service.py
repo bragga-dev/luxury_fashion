@@ -130,6 +130,8 @@ def confirm_password_reset(uidb64: str, token: str, new_password: str) -> None:
     user.set_password(new_password)
     user.save(update_fields=["password"])
 
+    revoke_all_tokens(user)
+
 
 
 def logout_all_sessions(user) -> None:
