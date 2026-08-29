@@ -131,7 +131,7 @@ def me_router(request):
 @ratelimit(key="ip", rate="5/m", block=True)
 def login_router(request, payload: LoginIn):
     try:
-        tokens = login_user(payload.email, payload.password)
+        tokens = login_user(payload.email, payload.password, user_agent=request.headers.get("User-Agent", ""))
     except EmailNotVerified:
         return 403, {"detail": "E-mail não verificado."}
     except InvalidCredentials:
@@ -156,7 +156,9 @@ def login_router(request, payload: LoginIn):
 @ratelimit(key="ip", rate="10/m", block=True)
 def google_login_router(request, payload: GoogleLoginIn):
     try:
-        tokens, created = login_or_register_client_google(payload.id_token)
+        tokens, created = login_or_register_client_google(
+            payload.id_token, user_agent=request.headers.get("User-Agent", "")
+        )
     except InvalidGoogleToken as e:
         return 401, {"detail": str(e)}
 
@@ -283,7 +285,7 @@ def refresh_router(request):
 @ratelimit(key="ip", rate="5/h", block=True)
 def register_router(request, payload: RegisterIn):
     try:
-        tokens = register_user_default_client(payload)
+        tokens = register_user_default_client(payload, user_agent=request.headers.get("User-Agent", ""))
     except UserAlreadyExists as e:
         return 409, {"detail": str(e)}
 
@@ -335,6 +337,7 @@ def change_password_router(request, payload: ChangePasswordIn):
             user=request.auth,
             old_password=payload.old_password,
             new_password=payload.new_password,
+            user_agent=request.headers.get("User-Agent", ""),
         )
     except InvalidPassword as e:
         return 400, {"detail": str(e)}
@@ -440,4 +443,3 @@ def delete_client_photo_router(request):
         return 200, client_updated
     except UserNotFound as e:
         return 404, {"detail": str(e)}
-

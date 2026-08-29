@@ -1,17 +1,7 @@
-import re
 import uuid
 
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from luxury_fashion.apps.core.validators.image_validator import validate_image_file
-from luxury_fashion.apps.accounts.models.user_model import User
-from luxury_fashion.apps.core.constants.gender import Gender    
-from luxury_fashion.apps.core.validators.image_validator import validate_image_file    
-from phonenumber_field.modelfields import PhoneNumberField
-from phonenumbers import parse, format_number, PhoneNumberFormat
-from datetime import timezone
-from django.utils import timezone 
 from luxury_fashion.apps.core.validators.validate_cep import validate_cep
 
 
@@ -71,7 +61,6 @@ class AddressesClient(models.Model):
             models.Index(fields=["neighborhood", "city"]),
             models.Index(fields=["cep"]),
         ]
-        ordering = ["first_name", "last_name"]
 
 
     def save(self, *args, **kwargs):

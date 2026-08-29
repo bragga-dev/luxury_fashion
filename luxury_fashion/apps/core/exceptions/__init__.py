@@ -2,7 +2,6 @@ from luxury_fashion.apps.core.exceptions.auth import InvalidCredentials, Invalid
 from luxury_fashion.apps.core.exceptions.user import UserAlreadyExists, UserNotFound, EmailNotVerified
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
 from luxury_fashion.apps.core.exceptions.media import InvalidImageFile
-from luxury_fashion.apps.core.exceptions.address import ProductNotFound
 from luxury_fashion.apps.core.exceptions.contact_exception import ContactNameAlreadyExists, ContactNotFound
 
 __all__ = [
@@ -17,7 +16,6 @@ __all__ = [
     "PermissionDenied",
     "EmailNotVerified",
     "InvalidImageFile",
-    "ProductNotFound",
     "ContactNameAlreadyExists",
     "ContactNotFound",
 ]
