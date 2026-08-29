@@ -98,4 +98,4 @@ class AddressUpdateIn(Schema):
 
 
 class AddressesList(Schema):
-    items: list[AddressesOut]
+    items: list[AddressOut]
