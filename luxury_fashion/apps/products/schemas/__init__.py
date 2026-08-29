@@ -34,6 +34,12 @@ from luxury_fashion.apps.products.schemas.product_variant_schema import (
     VariantUpdateIn,
 )
 
+from luxury_fashion.apps.products.schemas.product_shipping_schema import (
+    ProductShipping,
+    ShippingCreateIn,
+    ShippingUpdateIn,
+    ShippingOut,
+)
 
 __all__ = [
 
@@ -60,5 +66,10 @@ __all__ = [
     "VariantCreateIn",
     "VariantOut",
     "VariantUpdateIn",
+
+    "ProductShipping",
+    "ShippingCreateIn",
+    "ShippingUpdateIn",
+    "ShippingOut",
 
 ]
