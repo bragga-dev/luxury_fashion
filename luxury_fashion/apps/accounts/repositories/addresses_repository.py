@@ -4,7 +4,7 @@ from luxury_fashion.apps.accounts.models.client_model import Client
 from luxury_fashion.apps.accounts.schemas.address_schema import BrazilianStateEnum
 
 
-def create_client(
+def create_address(
     client_id: Client,
     cep: Optional[str] = None,
     street: Optional[str] = None,

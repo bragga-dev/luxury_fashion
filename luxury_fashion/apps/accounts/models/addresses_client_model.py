@@ -74,4 +74,7 @@ class AddressesClient(models.Model):
         ordering = ["first_name", "last_name"]
 
 
-    
+    def save(self, *args, **kwargs):
+        if self.is_preferential:
+            AddressesClient.objects.filter(client_id=self.client_id, is_preferential=True).exclude(pk=self.pk).update(is_preferential=False)
+        super().save(*args, **kwargs)

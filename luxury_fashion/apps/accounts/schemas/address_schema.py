@@ -42,7 +42,7 @@ class BrazilianStateEnum(str, Enum):
 
 
 
-class AddressesOut(Schema):
+class AddressOut(Schema):
     client: ClientOut
     address_id: uuid.UUID
     cep: str
@@ -74,8 +74,18 @@ class AddressesOut(Schema):
         )
 
 
-class AddressesCreateIn(Schema):
+class AddressCreateIn(Schema):
     client_id: uuid.UUID
+    cep: Optional[str] = None
+    street: Optional[str] = None
+    number: Optional[str] = None
+    complement: Optional[str]  = None
+    neighborhood: Optional[str] = None
+    city: Optional[str] = None 
+    state: BrazilianStateEnum = None
+    country: Optional[str] = None
+
+class AddressUpdateIn(Schema):
     cep: Optional[str] = None
     street: Optional[str] = None
     number: Optional[str] = None
