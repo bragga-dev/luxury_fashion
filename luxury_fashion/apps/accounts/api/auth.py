@@ -114,7 +114,7 @@ router = Router()
 @ratelimit(key="ip", rate="15/m", block=True)
 def me_router(request):
     try:
-        return 200, get_current_user_profile(request.auth.id)
+        return 200, get_current_user_profile(request.auth.user_id)
     except UserNotFound as e:
         return 404, {"detail": str(e)}
 
@@ -317,7 +317,7 @@ def resend_verification_email_router(request, email: str):
     """
     user = get_user_by_email(email)
     if user and not user.is_active:
-        send_verification_email.delay(user.pk)
+        send_verification_email.delay(user.user_id)
 
     return 200, {"detail": "Se este e-mail estiver cadastrado e pendente de verificação, você receberá as instruções em breve."}
 
@@ -384,7 +384,7 @@ def delete_account_router(request, payload: DeleteAccountIn):
 )
 @ratelimit(key="user", rate="10/h", block=True)
 def export_my_data_router(request):
-    return 200, export_user_data(request.auth.id)
+    return 200, export_user_data(request.auth.user_id)
 
 
 
@@ -414,7 +414,7 @@ def reactivate_user_router(request, user_id: uuid.UUID):
 def update_profile_client_router(request, payload: ClientUpdateIn):
     try:
         user: User = request.auth
-        client_updated = update_client_profile(user_id=user.id, payload=payload)
+        client_updated = update_client_profile(user_id=user.user_id, payload=payload)
         return 200, client_updated 
     except UserNotFound as e:
         return 404, {"detail": str(e)}
