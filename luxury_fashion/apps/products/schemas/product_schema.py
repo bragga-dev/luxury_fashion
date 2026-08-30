@@ -55,19 +55,35 @@ class ProductUpdateIn(Schema):
 
 
 class ProductListOut(Schema):
-    """Versão enxuta — usada na vitrine/listagem, sem carregar as variantes."""
+    """
+    Versão da vitrine/listagem: inclui as variantes ativas (preço, tamanho,
+    cor, estoque etc.) e a imagem de capa (ou, na ausência de uma capa
+    marcada, a primeira imagem por `display_order`). Não carrega a galeria
+    completa — para isso use o endpoint de detalhe (`ProductOut`).
+    """
     product_id: uuid.UUID
     product_name: str
     category: ProductCategoryOut
     is_active: bool
+    variants: List[VariantOut]
+    cover_image: Optional[ImageOut] = None
 
     @classmethod
     def from_orm(cls, product: Product) -> "ProductListOut":
+        # `product.variants`/`product.images` já vêm prefetchadas
+        # (variants filtradas por is_active=True, images ordenadas com a
+        # capa primeiro) pelo selector — usar `.all()` aproveita o cache
+        # do prefetch em vez de disparar uma query nova por produto.
+        images = list(product.images.all())
+        cover = images[0] if images else None
+
         return cls(
             product_id=product.product_id,
             product_name=product.product_name,
             category=ProductCategoryOut.from_orm(product.product_category_id),
             is_active=product.is_active,
+            variants=[VariantOut.from_orm(v) for v in product.variants.all()],
+            cover_image=ImageOut.from_orm(cover) if cover else None,
         )
 
 

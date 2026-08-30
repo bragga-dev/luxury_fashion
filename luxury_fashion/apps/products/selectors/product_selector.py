@@ -8,19 +8,28 @@ relação `variants`.
 import uuid
 from typing import Optional
 
-from django.db.models import Q, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 
+from luxury_fashion.apps.products.models.product_image_model import ProductImage
 from luxury_fashion.apps.products.models.product_model import Product
+from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
+
+
+def _with_variants_and_images(qs: QuerySet[Product]) -> QuerySet[Product]:
+    """
+    Prefetch de `variants` (só ativas) e `images` (capa primeiro, depois
+    display_order) — evita N+1 quando a listagem serializa variantes e a
+    imagem de capa de cada produto.
+    """
+    return qs.prefetch_related(
+        Prefetch("variants", queryset=ProductVariant.objects.filter(is_active=True)),
+        Prefetch("images", queryset=ProductImage.objects.order_by("-is_cover", "display_order", "created_at")),
+    )
 
 
 def get_product_by_id(product_id: uuid.UUID) -> Optional[Product]:
-    return (
-        Product.objects
-        .select_related("product_category_id")
-        .prefetch_related("variants", "images")
-        .filter(product_id=product_id)
-        .first()
-    )
+    qs = Product.objects.select_related("product_category_id").prefetch_related("variants", "images")
+    return qs.filter(product_id=product_id).first()
 
 
 def product_name_exists(product_name: str, exclude_id: Optional[uuid.UUID] = None) -> bool:
@@ -34,7 +43,7 @@ def get_all_products(active_only: bool = True) -> QuerySet[Product]:
     qs = Product.objects.select_related("product_category_id")
     if active_only:
         qs = qs.filter(is_active=True)
-    return qs
+    return _with_variants_and_images(qs)
 
 
 def filter_products(
@@ -78,4 +87,4 @@ def filter_products(
     if in_stock_only:
         qs = qs.filter(variants__is_active=True, variants__stock__gt=0)
 
-    return qs.distinct()
+    return _with_variants_and_images(qs.distinct())

@@ -181,23 +181,6 @@ def list_products_admin_router(
 
 # ── Escrita (admin) ───────────────────────────────────────────────────────────
 
-@router.post(
-    "",
-    response={201: ProductOut, 404: MessageOut, 409: MessageOut},
-    auth=AdminOnlyAuth(),
-    summary="Cria um novo produto",
-)
-@ratelimit(key="user", rate="30/h", block=True)
-def create_product_router(request, payload: ProductCreateIn):
-    try:
-        product = create_product_for_amdin(payload)
-        return 201, product
-    except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
-    except ProductNameAlreadyExists as e:
-        return 409, {"detail": str(e)}
-
-
 
 @router.patch(
     "/{product_id}",

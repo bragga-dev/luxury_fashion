@@ -4,7 +4,7 @@ ProductCategory Repository — persistência de ProductCategory.
 from typing import Optional
 
 from django.core.files import File
-
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from luxury_fashion.apps.products.models.product_category_model import ProductCategory
 from luxury_fashion.apps.core.tasks.media import delete_old_media_file
 
