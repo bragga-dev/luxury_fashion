@@ -2,16 +2,20 @@
 Product endpoints — vitrine/busca pública e CRUD administrativo.
 """
 import uuid
-from typing import Optional
+from typing import List, Optional
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import File, Form, Router, UploadedFile
+from pydantic import ValidationError as PydanticValidationError
 
 from luxury_fashion.apps.core.exceptions import (
     CategoryNotFound,
+    InvalidImageFile,
     ProductNameAlreadyExists,
     ProductNotFound,
+    ShippingAlreadyExists,
+    VariantAlreadyExists,
 )
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut, PageOut
@@ -22,6 +26,7 @@ from luxury_fashion.apps.products.schemas.product_enums_schema import (
     ProductSizeEnum,
 )
 from luxury_fashion.apps.products.schemas.product_schema import (
+    ProductCreateFullIn,
     ProductCreateIn,
     ProductListOut,
     ProductOut,
@@ -30,6 +35,7 @@ from luxury_fashion.apps.products.schemas.product_schema import (
 from luxury_fashion.apps.products.services.product_service import (
     activate_product_for_admin,
     create_product_for_amdin,
+    create_product_full_for_admin,
     deactivate_product_for_admin,
     delete_product_for_admin,
     get_product_for_all,
@@ -74,6 +80,56 @@ def list_products_router(
         active_only=True,
     )
     return 200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm)
+
+@router.post(
+    "/full",
+    response={201: ProductOut, 404: MessageOut, 409: MessageOut, 400: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Cria produto + 1ª variante + frete + imagens em uma única chamada",
+    description=(
+        "Endpoint de conveniência para o formulário de cadastro completo. "
+        "É multipart/form-data (por causa das imagens):\n\n"
+        "- `payload` (Form, string): JSON com `product_name`, `product_category_id`, "
+        "`variant` (tamanho/cor/gênero/preço/estoque/descrição) e `shipping` "
+        "(peso/dimensões da embalagem) — mesmo formato do schema `ProductCreateFullIn`.\n"
+        "- `images` (File, 0..N): quantas imagens forem necessárias para a galeria do produto.\n"
+        "- `cover_index` (Form, int, default 0): posição (na lista `images`) que vira a "
+        "imagem de capa. Se nenhuma imagem for enviada, o produto fica sem capa.\n\n"
+        "Tudo é persistido atomicamente. As tabelas Product/ProductVariant/"
+        "ProductShipping/ProductImage continuam separadas — isso só evita que o "
+        "front precise fazer várias chamadas encadeadas. Para adicionar mais "
+        "variantes ou imagens depois, use POST /products/{product_id}/variants "
+        "e POST /products/{product_id}/images."
+    ),
+)
+@ratelimit(key="user", rate="30/h", block=True)
+def create_product_full_router(
+    request,
+    payload: str = Form(..., description="JSON no formato de ProductCreateFullIn"),
+    images: List[UploadedFile] = File(None),
+    cover_index: int = Form(0),
+):
+    try:
+        data = ProductCreateFullIn.model_validate_json(payload)
+    except PydanticValidationError as e:
+        return 400, {"detail": str(e)}
+
+    try:
+        product = create_product_full_for_admin(data, images=images, cover_index=cover_index)
+        return 201, product
+    except CategoryNotFound as e:
+        return 404, {"detail": str(e)}
+    except ProductNameAlreadyExists as e:
+        return 409, {"detail": str(e)}
+    except VariantAlreadyExists as e:
+        return 409, {"detail": str(e)}
+    except ShippingAlreadyExists as e:
+        return 409, {"detail": str(e)}
+    except InvalidImageFile as e:
+        return 400, {"detail": str(e)}
+    except DjangoValidationError as e:
+        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+
 
 
 @router.get(
@@ -140,6 +196,7 @@ def create_product_router(request, payload: ProductCreateIn):
         return 404, {"detail": str(e)}
     except ProductNameAlreadyExists as e:
         return 409, {"detail": str(e)}
+
 
 
 @router.patch(

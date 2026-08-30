@@ -6,6 +6,8 @@ para a camada de API.
 import uuid
 from typing import Optional
 
+from django.db import transaction
+
 from luxury_fashion.apps.core.exceptions.products_exception import (
     CategoryNotFound,
     ProductNameAlreadyExists,
@@ -19,6 +21,7 @@ from luxury_fashion.apps.products.repositories.product_repository import (
     update_product,
 )
 from luxury_fashion.apps.products.schemas.product_schema import (
+    ProductCreateFullIn,
     ProductCreateIn,
     ProductListOut,
     ProductOut,
@@ -113,6 +116,62 @@ def create_product_for_amdin(data: ProductCreateIn) -> ProductOut:
         product_category_id=category,
     )
     return ProductOut.from_orm(product)
+
+
+def create_product_full_for_admin(
+    data: ProductCreateFullIn,
+    images: Optional[list] = None,
+    cover_index: int = 0,
+) -> ProductOut:
+    """
+    Cria o produto, sua primeira variante, os dados de frete dessa variante
+    e a galeria de imagens do produto — tudo em uma única operação atômica.
+
+    As tabelas (Product / ProductVariant / ProductShipping / ProductImage)
+    continuam normalizadas — isso apenas reaproveita os services já
+    existentes de cada recurso dentro de uma transação, para o front
+    conseguir cadastrar tudo com uma chamada só em vez de orquestrar
+    múltiplas requisições.
+
+    `images` é a lista de arquivos enviados (pode ser vazia). `cover_index`
+    indica qual posição dessa lista deve virar a imagem de capa (padrão: a
+    primeira, índice 0). Se nenhuma imagem for enviada, o produto fica sem
+    capa e pode receber imagens depois via POST /products/{id}/images.
+    """
+    # Imports locais para evitar import circular no carregamento do módulo
+    # (esses services não dependem deste módulo, mas mantemos o import
+    # aqui perto do uso composto).
+    from luxury_fashion.apps.products.services.product_image_service import (
+        upload_image_for_admin,
+    )
+    from luxury_fashion.apps.products.services.product_shipping_service import (
+        create_shipping_for_admin,
+    )
+    from luxury_fashion.apps.products.services.product_variant_service import (
+        create_variant_for_admin,
+    )
+
+    images = images or []
+
+    with transaction.atomic():
+        product = create_product_for_amdin(
+            ProductCreateIn(
+                product_name=data.product_name,
+                product_category_id=data.product_category_id,
+            )
+        )
+        variant = create_variant_for_admin(product.product_id, data.variant)
+        create_shipping_for_admin(variant.variant_id, data.shipping)
+
+        for index, image_file in enumerate(images):
+            upload_image_for_admin(
+                product.product_id,
+                image_file,
+                is_cover=(index == cover_index),
+                display_order=index,
+            )
+
+    return get_product_for_all(product.product_id)
 
 
 def update_product_for_admin(product_id: uuid.UUID, data: ProductUpdateIn) -> ProductOut:
