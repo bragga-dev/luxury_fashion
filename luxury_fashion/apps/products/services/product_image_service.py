@@ -45,6 +45,11 @@ def list_images_for_all(product_id: uuid.UUID) -> list[ImageOut]:
     return [ImageOut.from_orm(image) for image in images]
 
 
+def list_images_queryset(product_id: uuid.UUID):
+    """QuerySet bruto de imagens do produto, para paginação na camada de router."""
+    return get_images_by_product(product_id)
+
+
 # ── Escrita ──────────────────────────────────────────────────────────────
 
 def upload_image_for_admin(

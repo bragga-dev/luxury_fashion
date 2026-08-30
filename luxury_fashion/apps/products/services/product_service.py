@@ -74,6 +74,30 @@ def search_products_for_all(
     return [ProductListOut.from_orm(product) for product in products]
 
 
+def search_products_queryset(
+    search: Optional[str] = None,
+    product_category_id: Optional[uuid.UUID] = None,
+    gender: Optional[str] = None,
+    size: Optional[str] = None,
+    color: Optional[str] = None,
+    in_stock_only: bool = False,
+    active_only: bool = True,
+):
+    """
+    Mesma filtragem de `search_products_for_all`, mas devolve o QuerySet
+    bruto (sem serializar) para paginação na camada de router.
+    """
+    return filter_products(
+        search=search,
+        product_category_id=product_category_id,
+        gender=gender,
+        size=size,
+        color=color,
+        in_stock_only=in_stock_only,
+        active_only=active_only,
+    )
+
+
 # ── Escrita ──────────────────────────────────────────────────────────────
 
 def create_product_for_amdin(data: ProductCreateIn) -> ProductOut:

@@ -7,6 +7,11 @@ from django.http import JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
+from luxury_fashion.apps.products.api.category import router as category_router
+from luxury_fashion.apps.products.api.product import router as product_router
+from luxury_fashion.apps.products.api.variants import  nested_router as variant_nested_router, router as variant_router
+from luxury_fashion.apps.products.api.image import nested_router as image_nested_router, router as image_router
+from luxury_fashion.apps.products.api.shipping import router as shipping_router
 
 
 
@@ -38,6 +43,13 @@ api = NinjaAPI(
 
 api.add_router("/auth/", auth_router, tags=["Auth"])
 api.add_router("/admin/", admin_router, tags=["Admin"])
+api.add_router("/categories/", category_router, tags=["Categorias"])
+api.add_router("/products/", product_router, tags=["Produtos"])
+api.add_router("/products/", variant_nested_router, tags=["Variantes"])
+api.add_router("/products/", image_nested_router, tags=["Imagens"])
+api.add_router("/variants/", variant_router, tags=["Variantes"])
+api.add_router("/variants/", shipping_router, tags=["Frete"])
+api.add_router("/images/", image_router, tags=["Imagens"])
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
 

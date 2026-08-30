@@ -56,6 +56,11 @@ def list_categories_for_all(active_only: bool = True) -> list[ProductCategoryOut
     return [ProductCategoryOut.from_orm(category) for category in categories]
 
 
+def list_categories_queryset(active_only: bool = True):
+    """QuerySet bruto de categorias, para paginação na camada de router."""
+    return get_all_categories(active_only=active_only)
+
+
 # ── Escrita ──────────────────────────────────────────────────────────────
 
 def create_category_for_admin(data: ProductCategoryCreateIn) -> ProductCategoryOut:

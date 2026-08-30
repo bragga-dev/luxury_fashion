@@ -51,6 +51,11 @@ def list_variants_for_all(product_id: uuid.UUID, active_only: bool = True) -> li
     return [VariantOut.from_orm(variant) for variant in variants]
 
 
+def list_variants_queryset(product_id: uuid.UUID, active_only: bool = True):
+    """QuerySet bruto de variantes do produto, para paginação na camada de router."""
+    return get_variants_by_product(product_id, active_only=active_only)
+
+
 # ── Escrita ──────────────────────────────────────────────────────────────
 
 def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> VariantOut:
