@@ -9,7 +9,6 @@ from luxury_fashion.apps.products.models.product_shipping_model import ProductSh
 
 
 class ShippingCreateIn(Schema):
-    variant_id: uuid.UUID
     weight: Decimal
     height: Decimal
     width: Decimal

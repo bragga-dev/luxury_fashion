@@ -8,7 +8,7 @@ from luxury_fashion.apps.core.tasks.media import delete_old_media_file
 from luxury_fashion.apps.products.models.product_image_model import ProductImage
 from luxury_fashion.apps.products.models.product_model import Product
 
-
+@transaction.atomic
 def create_image(
     product_id: Product,
     product_image: File,

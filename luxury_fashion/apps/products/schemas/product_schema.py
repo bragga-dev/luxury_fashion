@@ -5,7 +5,7 @@ from ninja import Schema
 from pydantic import field_validator
 
 from luxury_fashion.apps.products.models.product_model import Product
-from luxury_fashion.apps.products.schemas.product_category_schema import CategoryOut
+from luxury_fashion.apps.products.schemas.product_category_schema import ProductCategoryOut
 from luxury_fashion.apps.products.schemas.product_variant_schema import VariantOut
 
 
@@ -32,7 +32,7 @@ class ProductListOut(Schema):
     """Versão enxuta — usada na vitrine/listagem, sem carregar as variantes."""
     product_id: uuid.UUID
     product_name: str
-    category: CategoryOut
+    category: ProductCategoryOut
     is_active: bool
 
     @classmethod
@@ -40,7 +40,7 @@ class ProductListOut(Schema):
         return cls(
             product_id=product.product_id,
             product_name=product.product_name,
-            category=CategoryOut.from_orm(product.product_category_id),
+            category=ProductCategoryOut.from_orm(product.product_category_id),
             is_active=product.is_active,
         )
 
@@ -54,7 +54,7 @@ class ProductOut(ProductListOut):
         return cls(
             product_id=product.product_id,
             product_name=product.product_name,
-            category=CategoryOut.from_orm(product.product_category_id),
+            category=ProductCategoryOut.from_orm(product.product_category_id),
             is_active=product.is_active,
             variants=[VariantOut.from_orm(v) for v in product.variants.filter(is_active=True)],
         )
