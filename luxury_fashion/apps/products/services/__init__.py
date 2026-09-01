@@ -51,6 +51,7 @@ from luxury_fashion.apps.products.services.product_shipping_service import (
     update_shipping_for_admin,
 )
 
+from luxury_fashion.apps.products.services.frenet_service import   quote_shipping_for_variant
 
 __all__ = [
 
@@ -96,5 +97,7 @@ __all__ = [
     "get_shipping_for_all",
     "get_shipping_payload",
     "update_shipping_for_admin",
+
+    "quote_shipping_for_variant",
 
 ]

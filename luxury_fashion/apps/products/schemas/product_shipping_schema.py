@@ -1,3 +1,4 @@
+import re
 import uuid
 from decimal import Decimal
 from typing import Optional
@@ -86,3 +87,39 @@ class ShippingOut(Schema):
             length=shipping.length,
             quantity=shipping.quantity,
         )
+
+
+# ── Cotação de frete (Frenet) ──────────────────────────────────────────────
+
+class ShippingQuoteIn(Schema):
+    """Payload de entrada pra cotar o frete de uma variante na Frenet."""
+
+    recipient_cep: str
+    quantity: Optional[int] = None
+
+    @field_validator("recipient_cep")
+    @classmethod
+    def recipient_cep_format(cls, v: str) -> str:
+        cep = re.sub(r"\D", "", v)
+        if len(cep) != 8:
+            raise ValueError("O CEP de destino deve possuir 8 dígitos.")
+        return cep
+
+    @field_validator("quantity")
+    @classmethod
+    def quantity_at_least_one(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("A quantidade deve ser pelo menos 1.")
+        return v
+
+
+class FrenetShippingOptionOut(Schema):
+    """Uma opção de frete retornada pela Frenet (uma transportadora/serviço)."""
+
+    carrier: str
+    service: str
+    service_code: Optional[str] = None
+    price: Decimal
+    delivery_time_days: int
+    error: bool = False
+    error_message: Optional[str] = None
