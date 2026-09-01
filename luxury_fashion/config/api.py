@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
-
+from luxury_fashion.apps.accounts.api.address import router as address_router
 
 
 from django_ratelimit.exceptions import Ratelimited
@@ -38,6 +38,7 @@ api = NinjaAPI(
 
 api.add_router("/auth/", auth_router, tags=["Auth"])
 api.add_router("/admin/", admin_router, tags=["Admin"])
+api.add_router("/address/", address_router, tags=["Address"])
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
 
