@@ -1,39 +1,34 @@
 """
-CartItem Repository — persistência de CartItem.
+CartItem Repository — persistência pura de CartItem. Nenhuma regra de
+negócio aqui (validação de estoque, decisão de criar vs. incrementar,
+etc.) — isso é responsabilidade exclusiva do service. O repository só
+executa a operação de persistência que já foi decidida e validada antes.
 
-Toda mutação de item recalcula os totais do Cart (`Cart.update_totals()`)
-no fim — os totais não podem ficar dessincronizados esperando alguém
-lembrar de chamar isso na camada de service.
+Toda mutação recalcula os totais do Cart (`Cart.update_totals()`) no fim
+— consistência do agregado Cart/CartItem, não regra de negócio.
 """
-from typing import Optional
-
 from luxury_fashion.apps.cart.models.cart_item_model import CartItem
 from luxury_fashion.apps.cart.models.cart_model import Cart
 from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
 
 
-def add_item(cart: Cart, variant: ProductVariant, quantity: int = 1) -> CartItem:
-    existing: Optional[CartItem] = CartItem.objects.filter(cart_id=cart, variant_id=variant).first()
-    new_quantity = (existing.quantity_item if existing else 0) + quantity
-
-    if new_quantity > variant.stock:
-        raise ValueError("Estoque insuficiente para essa quantidade.")
-
-    if existing:
-        existing.quantity_item = new_quantity
-        existing.save(update_fields=["quantity_item"])
-        item = existing
-    else:
-        item = CartItem(cart_id=cart, variant_id=variant, quantity_item=quantity)
-        item.save()
-
+def create_item(cart: Cart, variant: ProductVariant, quantity: int = 1) -> CartItem:
+    item = CartItem(cart_id=cart.cart_id, variant_id=variant.variant_id, quantity_item=quantity)
+    item.save()
     cart.update_totals()
     return item
 
 
+def increment_item_quantity(item: CartItem, quantity: int) -> CartItem:
+    """Soma `quantity` à quantidade já existente do item."""
+    item.quantity_item += quantity
+    item.save(update_fields=["quantity_item"])
+    item.cart_id.update_totals()
+    return item
+
+
 def update_item_quantity(item: CartItem, quantity: int) -> CartItem:
-    if quantity > item.variant_id.stock:
-        raise ValueError("Estoque insuficiente para essa quantidade.")
+    """Define a quantidade exata (não soma)."""
     item.quantity_item = quantity
     item.save(update_fields=["quantity_item"])
     item.cart_id.update_totals()
