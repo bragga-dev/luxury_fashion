@@ -22,10 +22,16 @@ class Cart(models.Model):
         return f"Carrinho {self.cart_id} - {self.user_id}"
 
     def calculate_total_price(self) -> Decimal:
-        return sum((item.subtotal() for item in self.items.all()), Decimal("0.00"))
+        from luxury_fashion.apps.cart.models.cart_item_model import CartItem
+
+        items = CartItem.objects.filter(cart_id=self)
+        return sum((item.subtotal() for item in items), Decimal("0.00"))
 
     def calculate_total_shipping(self) -> Decimal:
-        return sum((item.shipping_value or Decimal("0.00") for item in self.items.all()), Decimal("0.00"))
+        from luxury_fashion.apps.cart.models.cart_item_model import CartItem
+
+        items = CartItem.objects.filter(cart_id=self)
+        return sum((item.shipping_value or Decimal("0.00") for item in items), Decimal("0.00"))
 
     def update_totals(self):
         self.total_price = self.calculate_total_price()
