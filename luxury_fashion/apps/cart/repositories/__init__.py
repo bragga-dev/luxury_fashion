@@ -1,5 +1,5 @@
 from luxury_fashion.apps.cart.repositories.cart_repository import (
-    get_or_create_cart,
+    create_cart
 )
 
 from luxury_fashion.apps.cart.repositories.cart_item_repository import (
@@ -12,7 +12,7 @@ from luxury_fashion.apps.cart.repositories.cart_item_repository import (
 )
 
 __all__ = [
-    "get_or_create_cart",
+    "create_cart",
 
     "create_item",
     "increment_item_quantity",

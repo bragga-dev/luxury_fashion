@@ -10,6 +10,7 @@ from luxury_fashion.apps.accounts.api.admin import router as admin_router
 from luxury_fashion.apps.products.api.category import router as category_router
 from luxury_fashion.apps.products.api.product import router as product_router
 from luxury_fashion.apps.products.api.frenet import  router as frenet_router
+from luxury_fashion.apps.cart.api.cart import  router as cart_router
 
 
 from django_ratelimit.exceptions import Ratelimited
@@ -40,9 +41,10 @@ api = NinjaAPI(
 
 api.add_router("/auth/", auth_router, tags=["Auth"])
 api.add_router("/admin/", admin_router, tags=["Admin"])
-api.add_router("/categories/", category_router, tags=["Categorias"])
+api.add_router("/categories/", category_router, tags=["Category"])
 api.add_router("/products/", product_router, tags=["Produtos"])
 api.add_router("/shipping/", frenet_router, tags=["Shipping"])
+api.add_router("/cart/", cart_router, tags=["Cart"])
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
 

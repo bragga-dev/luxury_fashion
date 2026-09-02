@@ -13,7 +13,7 @@ from luxury_fashion.apps.products.models.product_variant_model import ProductVar
 
 
 def create_item(cart: Cart, variant: ProductVariant, quantity: int = 1) -> CartItem:
-    item = CartItem(cart_id=cart.cart_id, variant_id=variant.variant_id, quantity_item=quantity)
+    item = CartItem(cart_id=cart, variant_id=variant, quantity_item=quantity)
     item.save()
     cart.update_totals()
     return item
