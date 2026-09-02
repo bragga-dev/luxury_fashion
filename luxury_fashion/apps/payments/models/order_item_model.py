@@ -1,5 +1,4 @@
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
+
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.utils.translation import gettext_lazy as _
