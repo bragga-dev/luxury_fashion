@@ -12,3 +12,5 @@ def generate_temp_password(length: int = 12) -> str:
     pwd += [secrets.choice(alphabet) for _ in range(length - 4)]
     secrets.SystemRandom().shuffle(pwd)
     return "".join(pwd)
+
+
