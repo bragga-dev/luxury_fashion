@@ -6,17 +6,11 @@ class PermissionDenied(Exception):
     def __init__(self, msg: str = "Você não tem permissão para realizar esta ação."):
         super().__init__(_(msg))
 
-
-class EmployeeNotFoundError(Exception):
-    """Exceção lançada quando a funcionário não é encontrada."""
-    pass
-
-
 class ClientNotFoundError(Exception):
     """Exceção lançada quando o cliente não é encontrado."""
     pass
 
 
 class ClientNotActiveError(Exception):
-    """Exceção lançada quando o client não está ativo na funcionário."""
+    """Exceção lançada quando o client não está ativo."""
     pass

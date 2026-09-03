@@ -1,0 +1,821 @@
+<!-- ============================================================
+     FILE: base.html
+     Layout base dos e-mails Éluxo Modas.
+
+     Identidade visual — espelha o banner/hero da home:
+       cream-950 #fbf3ea   fundo geral
+       cream-900 #fffdfb   fundo do card
+       sand-800  #f6e9dc   blocos internos / info-box
+       sand-700  #ead9c0   bordas
+       sand-600  #dcc7a3   bordas hover / divisores
+       ink-50    #3a2e24   títulos
+       ink-100   #4a3b2c   texto principal
+       ink-300   #6b5b4e   texto secundário
+       ink-500   #8a7860   texto mudo / labels
+       ink-600   #a6957f   texto mudo (footer)
+       rose-400  #d98ca3   hover / destaque claro
+       rose-500  #a85a76   cor primária da marca
+       rose-600  #8f4a63   ativo / borda
+       gold-300  #e8d2a0   hover do dourado
+       gold-400  #d9ba79   accent / CTA "gold"
+       gold-500  #b08a3e   texto sobre dourado
+
+     Fontes: Cormorant Garamond (display / headings, serif elegante)
+             Jost (labels, botões, corpo de texto — sans geométrica)
+             Parisienne (script — só no monograma/assinatura, com moderação)
+     Raio de borda: 14px no card, 10px nos blocos internos — igual ao
+     banner da home.
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>{% block title %}Éluxo Modas{% endblock %}</title>
+
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&family=Parisienne&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Reset ─────────────────────────────────────────────── */
+        * { box-sizing: border-box; }
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; display: block; outline: none; text-decoration: none; }
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            background-color: #fbf3ea;
+        }
+
+        /* ── Preheader ─────────────────────────────────────────── */
+        .preheader {
+            display: none !important;
+            visibility: hidden;
+            mso-hide: all;
+            font-size: 1px;
+            line-height: 1px;
+            max-height: 0;
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        /* ── Wrapper ───────────────────────────────────────────── */
+        .email-wrapper {
+            background-color: #fbf3ea;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168,90,118,0.10), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 0%, rgba(217,186,121,0.10), transparent);
+            width: 100%;
+            padding: 48px 16px;
+        }
+
+        /* ── Card ──────────────────────────────────────────────── */
+        .email-card {
+            background-color: #fffdfb;
+            border: 1px solid #ead9c0;
+            border-radius: 14px;
+            overflow: hidden;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            box-shadow: 0 24px 60px rgba(90,60,40,0.14);
+        }
+
+        /* ── Header ────────────────────────────────────────────── */
+        .header {
+            background: #fffdfb;
+            border-bottom: 1px solid #ead9c0;
+            padding: 36px 40px 28px;
+            text-align: center;
+        }
+
+        .logo-badge {
+            display: inline-block;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #f6e9dc;
+            border: 1px solid rgba(217,186,121,0.6);
+            margin: 0 auto 16px;
+            line-height: 50px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 700;
+            font-size: 24px;
+            color: #a85a76;
+            text-align: center;
+        }
+
+        .logo-title {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-weight: 600;
+            font-size: 12px;
+            color: #b08a3e;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .logo-title-main {
+            display: block;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 600;
+            font-size: 24px;
+            color: #3a2e24;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 4px 0 0;
+        }
+
+        .header-tagline {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            color: #8a7860;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 12px 0 0;
+        }
+
+        .header-stripe {
+            display: block;
+            width: 44px;
+            height: 2px;
+            background: linear-gradient(90deg, #a85a76, #d9ba79 60%, transparent);
+            margin: 20px auto 0;
+        }
+
+        /* ── Body ──────────────────────────────────────────────── */
+        .body-cell {
+            padding: 40px 40px 44px;
+            background-color: #fffdfb;
+        }
+
+        /* ── Content blocks (usados pelos templates filhos) ────── */
+        .section-label {
+            display: inline-block;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #a85a76;
+            background: rgba(168,90,118,0.10);
+            border: 1px solid rgba(168,90,118,0.28);
+            padding: 5px 14px;
+            border-radius: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0 0 18px;
+        }
+
+        .section-label.gold {
+            color: #b08a3e;
+            background: rgba(217,186,121,0.14);
+            border-color: rgba(217,186,121,0.35);
+        }
+
+        .heading {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #3a2e24;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 22px;
+            line-height: 1.3;
+        }
+
+        .greeting {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            color: #4a3b2c;
+            margin: 0 0 10px;
+            line-height: 1.7;
+        }
+
+        .greeting strong {
+            color: #a85a76;
+        }
+
+        .body-text {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            color: #6b5b4e;
+            margin: 0 0 28px;
+            line-height: 1.75;
+        }
+
+        .body-text strong {
+            color: #4a3b2c;
+        }
+
+        .info-box {
+            background: #f6e9dc;
+            border: 1px solid #ead9c0;
+            border-left: 3px solid #a85a76;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .info-box.gold {
+            border-left-color: #d9ba79;
+        }
+
+        .info-box.plain {
+            border-left: 1px solid #ead9c0;
+        }
+
+        .info-box-title {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #3a2e24;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin: 0 0 10px;
+        }
+
+        .info-box-text {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #8a7860;
+            margin: 0;
+            line-height: 1.8;
+        }
+
+        .info-box-text strong {
+            color: #4a3b2c;
+            font-weight: 600;
+        }
+
+        .info-box-text a {
+            color: #a85a76;
+            text-decoration: none;
+        }
+
+        .cta-wrap {
+            text-align: center;
+            margin: 8px 0 26px;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            background: #a85a76;
+            color: #fffdfb !important;
+            text-decoration: none !important;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 16px 44px;
+            border-radius: 10px;
+            box-shadow: 0 10px 24px rgba(168,90,118,0.28);
+        }
+
+        .cta-btn-gold {
+            display: inline-block;
+            background: #d9ba79;
+            color: #3a2e24 !important;
+            text-decoration: none !important;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 16px 44px;
+            border-radius: 10px;
+            box-shadow: 0 10px 24px rgba(217,186,121,0.3);
+        }
+
+        .cta-btn-secondary {
+            display: inline-block;
+            background: transparent;
+            color: #6b5b4e !important;
+            text-decoration: none !important;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 14px 32px;
+            border-radius: 10px;
+            border: 1px solid #dcc7a3;
+            margin-top: 10px;
+        }
+
+        .link-fallback {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .link-fallback p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #a6957f;
+            margin: 0 0 8px;
+        }
+
+        .link-fallback a {
+            display: inline-block;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #a85a76;
+            background: #f6e9dc;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            word-break: break-all;
+            text-decoration: none;
+        }
+
+        .warning-box {
+            background: #f6e9dc;
+            border: 1px solid #ead9c0;
+            border-radius: 10px;
+            padding: 18px 22px;
+        }
+
+        .warning-box p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #8a7860;
+            margin: 0;
+            line-height: 1.75;
+        }
+
+        .warning-box strong {
+            color: #b08a3e;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #ead9c0;
+            margin: 28px 0 20px;
+        }
+
+        .closing-note {
+            text-align: center;
+            margin-top: 32px;
+            padding: 20px;
+            border-top: 1px solid #ead9c0;
+        }
+
+        .closing-note p.script {
+            font-family: 'Parisienne', cursive;
+            font-size: 20px;
+            color: #a85a76;
+            margin: 0;
+        }
+
+        .closing-note p.team {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #a6957f;
+            margin: 10px 0 0;
+        }
+
+        /* ── Footer ────────────────────────────────────────────── */
+        .footer {
+            background: #fbf3ea;
+            border-top: 1px solid #ead9c0;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #3a2e24;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .footer-logo span { color: #b08a3e; }
+
+        .footer-tagline {
+            font-family: 'Parisienne', cursive;
+            font-size: 15px;
+            color: #a85a76;
+            margin: 8px 0 0;
+        }
+
+        .footer-divider {
+            width: 32px;
+            height: 1px;
+            background: #ead9c0;
+            margin: 18px auto;
+            border: none;
+        }
+
+        .footer-auto {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #c3b39c;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Shared widgets (usados por vários templates filhos) ── */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 16px 0 4px;
+        }
+
+        .detail-item {
+            background: #fffdfb;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .detail-item .label {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            color: #a6957f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .detail-item .value {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #4a3b2c;
+            display: block;
+        }
+
+        .detail-item .value.price {
+            color: #a85a76;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 50px;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(217,186,121,0.16);
+            color: #b08a3e;
+        }
+
+        .status-badge.cancelled {
+            background: rgba(196,68,68,0.12);
+            color: #b23e3e;
+        }
+
+        .status-badge.success {
+            background: rgba(58,138,90,0.12);
+            color: #2f7a4f;
+        }
+
+        .service-name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: #3a2e24;
+            margin: 0 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .service-description {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #8a7860;
+            margin: 0 0 14px;
+            line-height: 1.7;
+        }
+
+        .service-image {
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            border-radius: 8px;
+            margin: 0 0 16px;
+            border: 1px solid #ead9c0;
+        }
+
+       
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .client-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #f6e9dc;
+            border: 1px solid rgba(168,90,118,0.35);
+            color: #a85a76;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 44px;
+        }
+
+        .client-name {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #4a3b2c;
+            margin: 0;
+        }
+
+        .notes-box {
+            background: #fbf3ea;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 14px;
+        }
+
+        .notes-box p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #8a7860;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .reason-box {
+            background: #fbf3ea;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-top: 14px;
+        }
+
+        .reason-box p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #8a7860;
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        .reason-box strong { color: #4a3b2c; }
+
+        .highlight-badge {
+            display: inline-block;
+            background: rgba(217,186,121,0.16);
+            border: 1px solid rgba(217,186,121,0.4);
+            color: #b08a3e !important;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 20px;
+            border-radius: 50px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .stars {
+            text-align: center;
+            font-size: 30px;
+            letter-spacing: 4px;
+            color: #d9ba79;
+            margin: 6px 0 14px;
+        }
+
+        .message-box {
+            background: #fbf3ea;
+            border: 1px solid #ead9c0;
+            border-left: 3px solid #d9ba79;
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 24px;
+        }
+
+        .message-box p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #6b5b4e;
+            font-style: italic;
+            margin: 0;
+            line-height: 1.75;
+        }
+
+        .action-box {
+            background: #f6e9dc;
+            border: 1px solid rgba(168,90,118,0.22);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 8px;
+        }
+
+        .action-box p {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #8a7860;
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .feature-item {
+            background: #fbf3ea;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 16px 14px;
+            text-align: center;
+        }
+
+        .feature-item .emoji {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .feature-item .label {
+            display: block;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a3b2c;
+            margin-bottom: 4px;
+        }
+
+        .feature-item .desc {
+            display: block;
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #a6957f;
+            line-height: 1.5;
+        }
+
+        .password-highlight {
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #b08a3e;
+            background: #fbf3ea;
+            border: 1px dashed rgba(217,186,121,0.5);
+            border-radius: 8px;
+            padding: 10px 22px;
+        }
+
+        .payment-row {
+            padding: 10px 0;
+            border-bottom: 1px solid #ead9c0;
+        }
+
+        .payment-row:last-child { border-bottom: none; }
+
+        .payment-label {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #8a7860;
+        }
+
+        .payment-value {
+            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #4a3b2c;
+            font-weight: 600;
+        }
+
+        .payment-value.amount {
+            font-size: 24px;
+            color: #a85a76;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 700;
+        }
+
+        .pix-section {
+            background: #fbf3ea;
+            border: 1px dashed rgba(217,186,121,0.5);
+            border-radius: 10px;
+            padding: 24px;
+            margin: 18px 0 24px;
+            text-align: center;
+        }
+
+        .pix-section h3 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #b08a3e;
+            margin: 0 0 14px;
+        }
+
+        .qr-code-container {
+            margin: 14px 0;
+            text-align: center;
+        }
+
+        .qr-code-container img {
+            max-width: 180px;
+            height: auto;
+            border: 1px solid #ead9c0;
+            border-radius: 10px;
+            padding: 12px;
+            background-color: #fffdfb;
+            margin: 0 auto;
+        }
+
+        .pix-copy-area {
+            background: #f6e9dc;
+            border: 1px solid #ead9c0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 12px 0 8px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #6b5b4e;
+        }
+
+        /* ── Mobile ────────────────────────────────────────────── */
+        @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px !important; }
+            .email-card { border-radius: 12px !important; }
+            .header { padding: 28px 22px 22px !important; }
+            .logo-title-main { font-size: 20px !important; }
+            .body-cell { padding: 26px 22px 30px !important; }
+            .heading { font-size: 23px !important; }
+            .cta-btn, .cta-btn-gold, .cta-btn-secondary { display: block !important; padding: 16px 20px !important; margin-left: 0 !important; margin-top: 10px; }
+            .footer { padding: 24px 22px !important; }
+            .detail-grid, .feature-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .detail-item, .feature-item { padding: 12px 8px; }
+        }
+    </style>
+
+    {% block extra_styles %}{% endblock %}
+</head>
+
+<body>
+
+<span class="preheader">{% block preheader %}Éluxo Modas{% endblock %}</span>
+
+<div class="email-wrapper">
+    <div class="email-card">
+
+        <!-- ── HEADER ─────────────────────────────────────────── -->
+        <div class="header">
+            <div class="logo-badge">É</div>
+            <p class="logo-title">Éluxo<span class="logo-title-main">Modas</span></p>
+            <p class="header-tagline">Feminina &amp; Masculina</p>
+            <span class="header-stripe"></span>
+        </div>
+
+        <!-- ── BODY (child template) ──────────────────────────── -->
+        <div class="body-cell">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- ── FOOTER ─────────────────────────────────────────── -->
+        <div class="footer">
+            <p class="footer-logo">Éluxo <span>Modas</span></p>
+            <p class="footer-tagline">Estilo que veste quem você ama</p>
+            <hr class="footer-divider">
+            <p class="footer-auto">Mensagem automática. Não responda este e-mail.</p>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

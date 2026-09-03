@@ -1,16 +1,11 @@
 """
 Roles - Funções que verificam o tipo e estado do usuário.
 """
-from beauty_formula.apps.accounts.models.user import User
+from luxury_fashion.apps.accounts.models.user_model import User
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Verificações de Role (tipo de usuário)
 # ═══════════════════════════════════════════════════════════════════════════════
-
-def is_employee(user: User) -> bool:
-    """Verifica se o usuário é uma Funcionário."""
-    return user.role == User.UserRole.EMPLOYEE
-
 
 def is_client(user: User) -> bool:
     """Verifica se o usuário é um Cliente."""
@@ -63,17 +58,11 @@ def is_staff(user: User) -> bool:
 
 def is_owner(user: User, resource_user_id) -> bool:
     """Verifica se o usuário é o dono do recurso (pelo user_id)."""
-    return str(user.id) == str(resource_user_id)
-
-
-def is_employee_owner(user: User, employee) -> bool:
-    """Verifica se o usuário é o dono de um recurso da Barbearia."""
-    return user == employee.user
-
+    return str(user.user_id) == str(resource_user_id)
 
 def is_client_owner(user: User, client) -> bool:
-    """Verifica se o usuário é o dono de um recurso da Barbearia."""
-    return user == client.user
+    """Verifica se o usuário é o dono de um recurso da loja."""
+    return user == client.user_id
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -88,22 +77,3 @@ def has_any_role(user: User, roles: list) -> bool:
 def has_all_roles(user: User, roles: list) -> bool:
     """Verifica se o usuário tem todas as roles especificadas."""
     return all(user.role == role for role in roles)
-
-
-
-
-def can_view_finances(user: User, employee) -> bool:
-    """
-    Verifica se o usuário pode ver finanças da Barbearia.
-    
-    Quem pode:
-    - Admin do sistema
-    - Dono da funcionário
-    - Pastor
-    - Tesoureiro
-    - Administrador da funcionário
-    """
-    return (
-        is_admin(user) or
-        is_employee_owner(user, employee) 
-    )

@@ -12,7 +12,7 @@ from google.oauth2 import id_token as google_id_token
 
 from django.conf import settings
 
-from beauty_formula.apps.core.exceptions.auth import InvalidGoogleToken
+from luxury_fashion.apps.core.exceptions.auth import InvalidGoogleToken
 
 _VALID_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 

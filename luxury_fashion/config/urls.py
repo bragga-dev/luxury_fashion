@@ -4,7 +4,7 @@
 
 
 
-from beauty_formula.config.api import api
+from luxury_fashion.config.api import api
 from django.contrib import admin
 from django.urls import path
 

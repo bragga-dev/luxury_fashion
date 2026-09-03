@@ -1,0 +1,177 @@
+"""
+Auth Services — autenticação, login, logout, refresh token.
+"""
+from django.contrib.auth import authenticate
+from ninja_jwt.tokens import RefreshToken
+from ninja_jwt.settings import api_settings as jwt_api_settings
+
+from django.utils import timezone
+from ninja_jwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from luxury_fashion.apps.accounts.models.session_metadata import SessionMetadata
+from luxury_fashion.apps.accounts.services.session_presenter import describe_user_agent
+from luxury_fashion.apps.core.tokens.jwt import make_tokens, revoke_all_tokens
+from luxury_fashion.apps.core.exceptions import (
+    InvalidCredentials,
+    InvalidToken,
+    InvalidPassword,
+    EmailNotVerified,
+    SessionNotFound,
+)
+
+from django.contrib.auth import authenticate
+
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from luxury_fashion.apps.accounts.models.user_model import User
+from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_email
+from luxury_fashion.apps.core.exceptions.auth import InvalidToken
+
+
+
+def login_user(email: str, password: str, user_agent: str = "") -> dict:
+    user = authenticate(username=email, password=password)
+
+    if not user:
+        try:
+            inactive_user = User.objects.get(email=email)
+            if not inactive_user.is_active and inactive_user.check_password(password):
+                raise EmailNotVerified()
+        except User.DoesNotExist:
+            pass
+        raise InvalidCredentials()
+
+    return make_tokens(user, user_agent=user_agent)
+
+
+def logout_user(refresh_token: str) -> None:
+    """Blacklista o refresh token (requer ninja_jwt.token_blacklist)."""
+    try:
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+    except Exception:
+        raise InvalidToken()
+
+
+def refresh_access_token(refresh_token: str) -> dict:
+    """
+    Gera um novo access token a partir do refresh.
+
+    Também aplica ROTATE_REFRESH_TOKENS/BLACKLIST_AFTER_ROTATION (configurados
+    em NINJA_JWT mas que não tinham efeito nenhum aqui — essa função só
+    lia o access token e devolvia, nunca rotacionava nem blacklistava o
+    refresh antigo). Sem isso, um refresh token vazado continuava válido
+    pelo resto do prazo dele (dias) mesmo depois de usado — a rotação é
+    justamente o que fecha essa janela: cada uso invalida o token anterior.
+    """
+    try:
+        token = RefreshToken(refresh_token)
+        data = {"access": str(token.access_token)}
+
+        if jwt_api_settings.ROTATE_REFRESH_TOKENS:
+            if jwt_api_settings.BLACKLIST_AFTER_ROTATION:
+                try:
+                    token.blacklist()
+                except AttributeError:
+                    pass
+
+            token.set_jti()
+            token.set_exp()
+            token.set_iat()
+            data["refresh"] = str(token)
+
+        return data
+    except Exception:
+        raise InvalidToken()
+
+
+def change_password(user: User, old_password: str, new_password: str, user_agent: str = "") -> dict:
+    """
+    Troca a senha e invalida todos os refresh tokens ativos do usuário.
+    Retorna um novo par de tokens para manter a sessão ativa.
+    """
+    if not user.check_password(old_password):
+        raise InvalidPassword()
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+
+    revoke_all_tokens(user)
+    return make_tokens(user, user_agent=user_agent)
+
+
+def request_password_reset(email: str) -> None:
+    """
+    Sempre retorna sem erro mesmo que o e-mail não exista
+    (evita enumeração de usuários).
+    """
+    user = get_user_by_email(email)
+    if not user:
+        return
+
+    from luxury_fashion.apps.accounts.tasks.password_reset import send_password_reset_email
+    uid = urlsafe_base64_encode(force_bytes(user.pk)).rstrip("=")
+    token = default_token_generator.make_token(user)
+    send_password_reset_email.delay(user.pk, uid, token)
+
+
+def confirm_password_reset(uidb64: str, token: str, new_password: str) -> None:
+    try:
+        padding = (4 - len(uidb64) % 4) % 4
+        uid = force_str(urlsafe_base64_decode(uidb64 + "=" * padding))
+        user = User.objects.get(pk=uid)
+    except (User.DoesNotExist, ValueError, TypeError):
+        raise InvalidToken()
+
+    if not default_token_generator.check_token(user, token):
+        raise InvalidToken()
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+
+    revoke_all_tokens(user)
+
+
+
+def logout_all_sessions(user) -> None:
+    """Blacklista todos os refresh tokens do usuário (logout em todos os dispositivos)."""
+    revoke_all_tokens(user)
+
+
+def list_active_sessions(user) -> list:
+    """
+    Retorna os refresh tokens ainda válidos (não expirados e não blacklistados)
+    do usuário, do mais recente para o mais antigo. Cada token ganha um
+    atributo `.device` (label legível, ex. "Chrome no Windows") calculado
+    on-the-fly a partir do `SessionMetadata.user_agent` — `None` pra
+    sessões antigas, criadas antes desse rastreamento existir.
+    """
+    tokens = list(
+        OutstandingToken.objects
+        .filter(user=user, expires_at__gt=timezone.now())
+        .exclude(blacklistedtoken__isnull=False)
+        .order_by("-created_at")
+    )
+
+    if not tokens:
+        return tokens
+
+    metadata_by_jti = {
+        m.jti: m.user_agent
+        for m in SessionMetadata.objects.filter(jti__in=[t.jti for t in tokens])
+    }
+    for token in tokens:
+        token.device = describe_user_agent(metadata_by_jti.get(token.jti, ""))
+
+    return tokens
+
+
+def revoke_session(user, session_id: int) -> None:
+    """Blacklista um refresh token específico do usuário (revoga uma sessão/dispositivo)."""
+    try:
+        token = OutstandingToken.objects.get(id=session_id, user=user)
+    except OutstandingToken.DoesNotExist:
+        raise SessionNotFound()
+
+    BlacklistedToken.objects.get_or_create(token=token)

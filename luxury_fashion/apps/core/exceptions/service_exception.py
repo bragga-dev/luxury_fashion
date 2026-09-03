@@ -7,18 +7,6 @@ class ServiceNotFound(Exception):
         super().__init__(self.message)
 
 
-class AssociationAlreadyExists(Exception):
-    def __init__(self, message=None):
-        self.message = message or _("Funcionário já está vinculado a esse serviço.")
-        super().__init__(self.message)
-
-
-class AssociationNotFound(Exception):
-    def __init__(self, message=None):
-        self.message = message or _("Vínculo entre funcionário e serviço não encontrado.")
-        super().__init__(self.message)
-
-
 class InvalidAvailabilityRequest(Exception):
     def __init__(self, message=None):
         self.message = message or _("Requisição de disponibilidade inválida.")
@@ -51,14 +39,6 @@ class SchedulingNotFound(Exception):
     def __init__(self, message=None):
         self.message = message or _("Agendamento não encontrado.")
         super().__init__(self.message)
-
-
-class SchedulingConflict(Exception):
-    """Horário indisponível: conflito de agenda, fora do expediente ou em bloqueio/folga."""
-    def __init__(self, message=None):
-        self.message = message or _("Esse horário não está disponível para o funcionário selecionado.")
-        super().__init__(self.message)
-
 
 class InvalidSchedulingRequest(Exception):
     def __init__(self, message=None):
