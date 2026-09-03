@@ -1,4 +1,3 @@
-from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
@@ -14,11 +13,6 @@ class PaymentBillingTypeEnum(str, Enum):
     BOLETO = "BOLETO"
     PIX = "PIX"
     CREDIT_CARD = "CREDIT_CARD"
-
-    @classmethod
-    def get_display_name(cls, value: str) -> str:
-        choices_dict = dict(Payment.PaymentMode.choices)
-        return choices_dict.get(value, value)
 
 
 class PaymentStatusEnum(str, Enum):
@@ -39,19 +33,47 @@ class PaymentStatusEnum(str, Enum):
     AWAITING_RISK_ANALYSIS = "AWAITING_RISK_ANALYSIS"
     CANCELLED = "CANCELLED"
 
-    @classmethod
-    def get_display_name(cls, value: str) -> str:
-        choices_dict = dict(Payment.PaymentStatus.choices)
-        return choices_dict.get(value, value)
+
+class CreditCardIn(Schema):
+    """Só é usado quando billing_type=CREDIT_CARD. Nunca é persistido."""
+    holder_name: str
+    number: str
+    expiry_month: str
+    expiry_year: str
+    ccv: str
+
+
+class CreditCardHolderInfoIn(Schema):
+    name: str
+    email: str
+    cpf_cnpj: str
+    postal_code: str
+    address_number: str
+    phone: Optional[str] = None
 
 
 class PaymentCreateIn(Schema):
-    order_id: uuid.UUID  
+    """
+    order_id vem da URL (/orders/{order_id}/payments), não daqui — não
+    precisa duplicar. billing_type=CREDIT_CARD exige credit_card e
+    credit_card_holder_info; PIX e BOLETO ignoram os dois.
+    """
     billing_type: PaymentBillingTypeEnum
-    
+    credit_card: Optional[CreditCardIn] = None
+    credit_card_holder_info: Optional[CreditCardHolderInfoIn] = None
 
 
-class PaymentResponseOut(Schema):
+class RefundIn(Schema):
+    """
+    Estorno. value ausente = estorno integral. value informado = estorno
+    parcial (ex.: reter taxa de cancelamento) — a Asaas valida se cabe no
+    saldo disponível da cobrança.
+    """
+    value: Optional[Decimal] = Field(default=None, gt=0)
+    description: Optional[str] = Field(default=None, max_length=500)
+
+
+class PaymentOut(Schema):
     payment_id: uuid.UUID
     order_id: uuid.UUID
     asaas_payment_id: Optional[str] = None
@@ -60,7 +82,6 @@ class PaymentResponseOut(Schema):
     status: PaymentStatusEnum
     due_date: date
     description: str
-    external_reference: Optional[str] = None
     invoice_url: Optional[str] = None
     bank_slip_url: Optional[str] = None
     pix_qr_code: Optional[str] = None
@@ -68,21 +89,18 @@ class PaymentResponseOut(Schema):
     payment_date: Optional[datetime] = None
     net_value: Optional[Decimal] = None
     created_at: datetime
-    updated_at: datetime
-    synced_with_asaas: bool
 
     @classmethod
-    def from_orm(cls, payment: Payment) -> "PaymentResponseOut":
+    def from_orm(cls, payment: Payment) -> "PaymentOut":
         return cls(
             payment_id=payment.payment_id,
-            order_id=payment.order_id,
+            order_id=payment.order_id_id,  # _id pega o UUID cru, não o objeto Order
             asaas_payment_id=payment.asaas_payment_id,
             value=payment.value,
             billing_type=payment.billing_type,
             status=payment.status,
             due_date=payment.due_date,
             description=payment.description,
-            external_reference=payment.external_reference,
             invoice_url=payment.invoice_url,
             bank_slip_url=payment.bank_slip_url,
             pix_qr_code=payment.pix_qr_code,
@@ -90,37 +108,23 @@ class PaymentResponseOut(Schema):
             payment_date=payment.payment_date,
             net_value=payment.net_value,
             created_at=payment.created_at,
-            updated_at=payment.updated_at,
-            synced_with_asaas=payment.synced_with_asaas,
         )
 
 
-class PaymentUpdateIn(Schema):
-    """PATCH administrativo — status é atualizado via webhook, não por aqui (ver PaymentStatusUpdateSchema)."""
-    billing_type: Optional[PaymentBillingTypeEnum] = None
-    due_date: Optional[date] = None
-    description: Optional[str] = Field(None, max_length=500)
-
-
-class PaymentStatusUpdateIn(Schema):
-    """Usado pelo endpoint de webhook pra aplicar a mudança de status vinda da Asaas."""
-    status: PaymentStatusEnum
-
-
-class PaymentFilterOut(Schema):
+class PaymentFilterIn(Schema):
+    """Filtros de listagem (admin)."""
     order_id: Optional[uuid.UUID] = None
-    search: Optional[str] = None
     status: Optional[PaymentStatusEnum] = None
     billing_type: Optional[PaymentBillingTypeEnum] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    synced: Optional[bool] = None
 
-class PaymentRefundSchema(Schema):
+
+class AsaasWebhookIn(Schema):
     """
-    Estorno acionado manualmente pelo admin. value ausente = estorno
-    integral. value informado = estorno parcial (ex: reter taxa de
-    cancelamento) — a Asaas valida se cabe no saldo disponível.
+    Corpo enviado pela Asaas: {"event": "PAYMENT_RECEIVED", "payment": {...}}.
+    `payment` fica solto como dict porque o corpo real tem muito mais campo
+    do que a gente usa (camelCase, e a Asaas pode adicionar novos sem avisar).
     """
-    value: Optional[Decimal] = Field(default=None, gt=0)
-    description: Optional[str] = Field(default=None, max_length=500)
+    event: str
+    payment: dict

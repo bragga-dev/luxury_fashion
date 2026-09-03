@@ -1,10 +1,10 @@
-# payments/models/payment.py
-
 import uuid
 from decimal import Decimal
+
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator
+
 
 class Payment(models.Model):
     class PaymentMode(models.TextChoices):
@@ -13,7 +13,7 @@ class Payment(models.Model):
         CREDIT_CARD = "CREDIT_CARD", _("Cartão de Crédito")
 
     class PaymentStatus(models.TextChoices):
-     
+                
         PENDING = "PENDING", _("Pendente")
         RECEIVED = "RECEIVED", _("Recebido")
         CONFIRMED = "CONFIRMED", _("Confirmado")
@@ -31,7 +31,11 @@ class Payment(models.Model):
         CANCELLED = "CANCELLED", _("Cancelado")
 
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order_id = models.OneToOneField("payments.Order", on_delete=models.CASCADE, related_name="order_payments")
+    # ForeignKey (não OneToOne): um pedido pode gerar mais de uma cobrança ao
+    # longo do tempo (ex.: Pix expirou, cliente tenta de novo; cartão negado,
+    # tenta outro meio). O service garante que só exista 1 cobrança "aberta"
+    # por vez (ver get_open_payment_for_order / OrderAlreadyPaid).
+    order_id = models.ForeignKey("payments.Order", on_delete=models.CASCADE, related_name="payments")
     asaas_payment_id = models.CharField(_("ID da cobrança no Asaas"), max_length=50, blank=True, null=True, db_index=True)
     value = models.DecimalField(_("Valor do Serviço"), max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     billing_type = models.CharField(_("Forma de Pagamento"), max_length=20, choices=PaymentMode.choices, default=PaymentMode.PIX, db_index=True)
@@ -48,7 +52,6 @@ class Payment(models.Model):
     created_at = models.DateTimeField(_("Criado em"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Atualizado em"), auto_now=True)
     synced_with_asaas = models.BooleanField(_("Sincronizado com Asaas"), default=False)
-    
 
     class Meta:
         ordering = ['-created_at']
@@ -60,4 +63,4 @@ class Payment(models.Model):
         ]
 
     def __str__(self):
-        return f"Pagamento {str(self.payment_id)[:8]} - {self.order_id.cart_id.user_id}"
+        return f"Pagamento {str(self.payment_id)[:8]} - Pedido {self.order_id.code}"

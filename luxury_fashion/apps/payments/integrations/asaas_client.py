@@ -14,7 +14,7 @@ class AsaasClient:
         self.session.headers.update({
             "access_token": settings.ASAAS_API_KEY,
             "Content-Type": "application/json",
-            "User-Agent": "beauty-formula",
+            "User-Agent": "luxury-fashion",
         })
 
     @staticmethod
@@ -72,6 +72,9 @@ class AsaasClient:
         due_date: str,
         description: str = None,
         external_reference: str = None,
+        credit_card: dict = None,
+        credit_card_holder_info: dict = None,
+        remote_ip: str = None,
     ) -> dict:
         payload = {
             "customer": customer_id,
@@ -80,8 +83,11 @@ class AsaasClient:
             "dueDate": due_date,
             "description": description,
             "externalReference": external_reference,
+            "creditCard": credit_card,
+            "creditCardHolderInfo": credit_card_holder_info,
+            "remoteIp": remote_ip,
         }
-       
+
         payload = {k: v for k, v in payload.items() if v is not None}
         return self._request("POST", "/payments", json=payload)
 
