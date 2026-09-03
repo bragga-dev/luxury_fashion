@@ -17,6 +17,7 @@ from luxury_fashion.apps.accounts.repositories.client_repository import (
     remove_client_photo,
     update_client,
 )
+from luxury_fashion.apps.cart.repositories.cart_repository import create_cart
 
 from luxury_fashion.apps.accounts.repositories.user_repository import (
     activate_user,
@@ -91,6 +92,7 @@ def register_user_default_client(data: RegisterIn, user_agent: str = "") -> dict
 
     if user.role == User.UserRole.CLIENT:
         create_client(user)
+        create_cart(user)
 
     send_verification_email.delay(user.pk)   
     return make_tokens(user, user_agent=user_agent)
@@ -127,6 +129,7 @@ def login_or_register_client_google(id_token: str, user_agent: str = "") -> tupl
             first_name=claims.get("given_name"),
             last_name=claims.get("family_name"),
         )
+        create_cart(user)
         created = True
 
     if not user.is_active or not user.is_trusty:

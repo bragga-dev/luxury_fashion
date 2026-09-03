@@ -8,11 +8,14 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
 from ninja import Router
 
+
+from luxury_fashion.apps.accounts.schemas.user_schema import MessageOut
+
 from luxury_fashion.apps.accounts.schemas.address_schema import (
     AddressCreateIn,
     AddressOut,
     AddressUpdateIn,
-    MessageOut,
+    
 )
 from luxury_fashion.apps.accounts.services.address_service import (
     register_address_for_client,
@@ -104,7 +107,7 @@ def detail_my_address_router(request, address_id: uuid.UUID):
     try:
         user: User = request.auth
         address = get_address_for_client(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id
         )
         return 200, address
@@ -184,7 +187,7 @@ def create_my_address_router(request, payload: AddressCreateIn):
     try:
         user: User = request.auth
         address = register_address_for_client(
-            user_id=user.id,
+            user_id=user.user_id,
             data=payload
         )
         return 201, address
@@ -216,7 +219,7 @@ def update_my_address_router(request, address_id: uuid.UUID, payload: AddressUpd
     try:
         user: User = request.auth
         address = update_address_for_client(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id,
             payload=payload
         )
@@ -251,7 +254,7 @@ def activate_my_address_router(request, address_id: uuid.UUID):
     try:
         user: User = request.auth
         address = update_address_check_up(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id
         )
         return 200, address
@@ -279,7 +282,7 @@ def deactivate_my_address_router(request, address_id: uuid.UUID):
     try:
         user: User = request.auth
         address = update_address_check_down(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id
         )
         return 200, address
@@ -311,21 +314,21 @@ def set_preferential_address_router(request, address_id: uuid.UUID):
         user: User = request.auth
         
         # Verifica se o endereço pertence ao cliente
-        if not validate_address_belongs_to_client(user_id=user.id, address_id=address_id):
+        if not validate_address_belongs_to_client(user_id=user.user_id, address_id=address_id):
             return 404, {"detail": "Endereço não encontrado ou não pertence ao cliente."}
         
         # Busca o endereço atual preferencial e desativa
-        current_preferential = get_preferential_address_for_client(user_id=user.id)
+        current_preferential = get_preferential_address_for_client(user_id=user.user_id)
         if current_preferential and current_preferential.address_id != address_id:
             # Desativa o preferencial atual
             update_address_check_down(
-                user_id=user.id,
+                user_id=user.user_id,
                 address_id=current_preferential.address_id
             )
         
         # Ativa o novo endereço preferencial
         address = update_address_check_up(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id
         )
         
@@ -358,7 +361,7 @@ def check_my_address_exists_router(request, address_id: uuid.UUID):
     try:
         user: User = request.auth
         exists = validate_address_belongs_to_client(
-            user_id=user.id,
+            user_id=user.user_id,
             address_id=address_id
         )
         return 200, {"exists": exists}
