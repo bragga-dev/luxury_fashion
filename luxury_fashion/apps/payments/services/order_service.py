@@ -28,11 +28,11 @@ from luxury_fashion.apps.products.repositories.product_variant_repository import
 
 
 def _validate_shipping_address(user_id: uuid.UUID, shipping_address_id: uuid.UUID):
-    client = get_client_by_user_id(user_id)
+    client = get_client_by_user_id(user_id=user_id)
     if client is None:
         raise UserNotFound()
 
-    address = get_address_by_id(shipping_address_id)
+    address = get_address_by_id(shipping_address_id=shipping_address_id)
     if address is None or address.client_id_id != client.client_id:
         raise PermissionDenied("Endereço não pertence ao cliente autenticado.")
     return address
@@ -43,7 +43,7 @@ def create_order_from_cart(user_id: uuid.UUID, data: OrderCreateIn) -> OrderOut:
     if user is None:
         raise UserNotFound()
 
-    shipping_address = _validate_shipping_address(user_id, data.shipping_address_id)
+    shipping_address = _validate_shipping_address(user_id=user_id, shipping_address_id=data.shipping_address_id)
 
     cart = get_cart_by_user_id(user_id=user_id)
     if cart is None:
@@ -53,8 +53,6 @@ def create_order_from_cart(user_id: uuid.UUID, data: OrderCreateIn) -> OrderOut:
     if not cart_items:
         raise EmptyCart()
 
-    # Revalida estoque no exato momento do checkout — pode ter mudado desde
-    # que o item foi colocado no carrinho.
     for item in cart_items:
         if item.quantity_item > item.variant_id.stock:
             raise InsufficientStock(
@@ -82,9 +80,9 @@ def create_order_from_cart(user_id: uuid.UUID, data: OrderCreateIn) -> OrderOut:
     )
 
     for item in cart_items:
-        adjust_variant_stock(item.variant_id, -item.quantity_item)
+        adjust_variant_stock(variant=item.variant_id, delta=-item.quantity_item)
 
-    clear_cart(cart)
+    clear_cart(cart=cart)
 
     return _order_out_for(user_id=user_id, order_id=order.order_id)
 
@@ -123,7 +121,7 @@ def cancel_order(user_id: uuid.UUID, order_id: uuid.UUID) -> OrderOut:
         raise OrderNotPayable("Só é possível cancelar pedidos com pagamento pendente.")
 
     for item in order.items.all():
-        adjust_variant_stock(item.variant_id, item.order_item_quantity)
+        adjust_variant_stock(variant=item.variant_id, delta=item.order_item_quantity)
 
     update_order_status(order, Order.StatusOrder.CANCELLED)
     return _order_out_for(user_id=user_id, order_id=order_id)

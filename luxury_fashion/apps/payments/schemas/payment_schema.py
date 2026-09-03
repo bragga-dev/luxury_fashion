@@ -94,7 +94,7 @@ class PaymentOut(Schema):
     def from_orm(cls, payment: Payment) -> "PaymentOut":
         return cls(
             payment_id=payment.payment_id,
-            order_id=payment.order_id_id,  # _id pega o UUID cru, não o objeto Order
+            order_id=payment.order_id_id,
             asaas_payment_id=payment.asaas_payment_id,
             value=payment.value,
             billing_type=payment.billing_type,

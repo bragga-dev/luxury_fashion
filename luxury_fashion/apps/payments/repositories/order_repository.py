@@ -33,10 +33,6 @@ def create_order(
 
 
 def bulk_create_order_items(order: Order, items: Iterable[dict]) -> list[OrderItem]:
-    """
-    `items` é um iterável de dicts:
-    {"variant": ProductVariant, "quantity": int, "unit_price": Decimal}
-    """
     objs = [
         OrderItem(
             order_id=order,

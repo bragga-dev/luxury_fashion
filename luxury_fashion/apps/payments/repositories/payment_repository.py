@@ -60,7 +60,7 @@ def _to_aware_datetime(raw: str):
     parsed = parse_datetime(raw) or parse_date(raw)
     if parsed is None:
         return None
-    if not hasattr(parsed, "hour"):  # é date, não datetime
+    if not hasattr(parsed, "hour"):  
         parsed = timezone.datetime.combine(parsed, timezone.datetime.min.time())
     if timezone.is_naive(parsed):
         parsed = timezone.make_aware(parsed)

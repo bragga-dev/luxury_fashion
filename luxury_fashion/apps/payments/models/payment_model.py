@@ -31,10 +31,6 @@ class Payment(models.Model):
         CANCELLED = "CANCELLED", _("Cancelado")
 
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # ForeignKey (não OneToOne): um pedido pode gerar mais de uma cobrança ao
-    # longo do tempo (ex.: Pix expirou, cliente tenta de novo; cartão negado,
-    # tenta outro meio). O service garante que só exista 1 cobrança "aberta"
-    # por vez (ver get_open_payment_for_order / OrderAlreadyPaid).
     order_id = models.ForeignKey("payments.Order", on_delete=models.CASCADE, related_name="payments")
     asaas_payment_id = models.CharField(_("ID da cobrança no Asaas"), max_length=50, blank=True, null=True, db_index=True)
     value = models.DecimalField(_("Valor do Serviço"), max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
