@@ -434,3 +434,18 @@ RATELIMIT_FAIL_OPEN = False
 # GOOGLE OAUTH
 # =========================================================
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+
+
+
+# =========================================================
+# CEP DE ORIGEM
+# =========================================================
+ORIGIN_ZIP_CODE = "45201347"
+
+
+
+# =========================================================
+# FRENET
+# =========================================================
+FRENET_BASE_URL = env("FRENET_BASE_URL", default="https://api.frenet.com.br")
+FRENET_API_KEY = env("FRENET_API_KEY")

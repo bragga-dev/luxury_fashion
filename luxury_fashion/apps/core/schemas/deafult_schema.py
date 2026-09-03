@@ -1,7 +1,3 @@
-
-
-
-
 from typing import TypeVar, Generic, List
 from ninja import Schema
 
@@ -16,4 +12,6 @@ class PageOut(Schema, Generic[T]):
     pages: int     
 
 
-
+class MessageOut(Schema):
+    """Schema genérico para respostas simples de mensagem (erros e confirmações)."""
+    detail: str

@@ -7,6 +7,9 @@ from django.http import JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
+from luxury_fashion.apps.products.api.category import router as category_router
+from luxury_fashion.apps.products.api.product import router as product_router
+from luxury_fashion.apps.products.api.frenet import router as frenet_router
 from luxury_fashion.apps.accounts.api.address import router as address_router
 
 
@@ -38,6 +41,9 @@ api = NinjaAPI(
 
 api.add_router("/auth/", auth_router, tags=["Auth"])
 api.add_router("/admin/", admin_router, tags=["Admin"])
+api.add_router("/categories/", category_router, tags=["Categorias"])
+api.add_router("/products/", product_router, tags=["Produtos"])
+api.add_router("/shipping/", frenet_router, tags=["Shipping"])
 api.add_router("/address/", address_router, tags=["Address"])
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
@@ -82,8 +88,6 @@ def permission_denied(request: HttpRequest, exc: PermissionDenied):
 @api.exception_handler(Ratelimited)
 def ratelimit_error(request: HttpRequest, exc: Ratelimited):
     return api.create_response(request, {"detail": f"Muitas tentativas. Tente novamente mais tarde."}, status=429,)
-
-
 
 
 @api.exception_handler(Exception)

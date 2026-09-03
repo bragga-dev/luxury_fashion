@@ -3,6 +3,19 @@ from luxury_fashion.apps.core.exceptions.user import UserAlreadyExists, UserNotF
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
 from luxury_fashion.apps.core.exceptions.media import InvalidImageFile
 from luxury_fashion.apps.core.exceptions.contact_exception import ContactNameAlreadyExists, ContactNotFound
+from luxury_fashion.apps.core.exceptions.shipping import FrenetAPIError
+from luxury_fashion.apps.core.exceptions.products_exception import (
+    ProductNotFound,
+    ProductNameAlreadyExists,
+    CategoryNotFound,
+    CategoryNameAlreadyExists,
+    CategoryHasProducts,
+    VariantNotFound,
+    VariantAlreadyExists,
+    ImageNotFound,
+    ShippingNotFound,
+    ShippingAlreadyExists,
+)
 
 __all__ = [
     
@@ -18,4 +31,17 @@ __all__ = [
     "InvalidImageFile",
     "ContactNameAlreadyExists",
     "ContactNotFound",
+
+    "FrenetAPIError",
+
+    "ProductNotFound",
+    "ProductNameAlreadyExists",
+    "CategoryNotFound",
+    "CategoryNameAlreadyExists",
+    "CategoryHasProducts",
+    "VariantNotFound",
+    "VariantAlreadyExists",
+    "ImageNotFound",
+    "ShippingNotFound",
+    "ShippingAlreadyExists",
 ]
