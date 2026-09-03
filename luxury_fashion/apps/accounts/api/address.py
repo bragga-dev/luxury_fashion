@@ -8,11 +8,14 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
 from ninja import Router
 
+
+from luxury_fashion.apps.accounts.schemas.user_schema import MessageOut
+
 from luxury_fashion.apps.accounts.schemas.address_schema import (
     AddressCreateIn,
     AddressOut,
     AddressUpdateIn,
-    MessageOut,
+    
 )
 from luxury_fashion.apps.accounts.services.address_service import (
     register_address_for_client,
