@@ -46,7 +46,7 @@ def _get_product_or_raise(product_id: uuid.UUID):
 # ── Leitura ──────────────────────────────────────────────────────────────
 
 def get_product_for_all(product_id: uuid.UUID) -> ProductOut:
-    product = _get_product_or_raise(product_id)
+    product = _get_product_or_raise(product_id=product_id)
     return ProductOut.from_orm(product)
 
 
@@ -104,17 +104,14 @@ def search_products_queryset(
 # ── Escrita ──────────────────────────────────────────────────────────────
 
 def create_product_for_amdin(data: ProductCreateIn) -> ProductOut:
-    category = get_category_by_id(data.product_category_id)
+    category = get_category_by_id(product_category_id=data.product_category_id)
     if category is None:
         raise CategoryNotFound()
 
     if product_name_exists(data.product_name):
         raise ProductNameAlreadyExists()
 
-    product = create_product(
-        product_name=data.product_name,
-        product_category_id=category,
-    )
+    product = create_product(product_name=data.product_name, product_category_id=category,)
     return ProductOut.from_orm(product)
 
 
@@ -123,24 +120,7 @@ def create_product_full_for_admin(
     images: Optional[list] = None,
     cover_index: int = 0,
 ) -> ProductOut:
-    """
-    Cria o produto, sua primeira variante, os dados de frete dessa variante
-    e a galeria de imagens do produto — tudo em uma única operação atômica.
-
-    As tabelas (Product / ProductVariant / ProductShipping / ProductImage)
-    continuam normalizadas — isso apenas reaproveita os services já
-    existentes de cada recurso dentro de uma transação, para o front
-    conseguir cadastrar tudo com uma chamada só em vez de orquestrar
-    múltiplas requisições.
-
-    `images` é a lista de arquivos enviados (pode ser vazia). `cover_index`
-    indica qual posição dessa lista deve virar a imagem de capa (padrão: a
-    primeira, índice 0). Se nenhuma imagem for enviada, o produto fica sem
-    capa e pode receber imagens depois via POST /products/{id}/images.
-    """
-    # Imports locais para evitar import circular no carregamento do módulo
-    # (esses services não dependem deste módulo, mas mantemos o import
-    # aqui perto do uso composto).
+   
     from luxury_fashion.apps.products.services.product_image_service import (
         upload_image_for_admin,
     )
@@ -154,14 +134,9 @@ def create_product_full_for_admin(
     images = images or []
 
     with transaction.atomic():
-        product = create_product_for_amdin(
-            ProductCreateIn(
-                product_name=data.product_name,
-                product_category_id=data.product_category_id,
-            )
-        )
-        variant = create_variant_for_admin(product.product_id, data.variant)
-        create_shipping_for_admin(variant.variant_id, data.shipping)
+        product = create_product_for_amdin(ProductCreateIn(product_name=data.product_name, product_category_id=data.product_category_id,))
+        variant = create_variant_for_admin(product_id=product.product_id, data=data.variant)
+        create_shipping_for_admin(variant_id=variant.variant_id, data=data.shipping)
 
         for index, image_file in enumerate(images):
             upload_image_for_admin(
@@ -171,39 +146,43 @@ def create_product_full_for_admin(
                 display_order=index,
             )
 
-    return get_product_for_all(product.product_id)
+    return get_product_for_all(product_id=product.product_id)
 
 
 def update_product_for_admin(product_id: uuid.UUID, data: ProductUpdateIn) -> ProductOut:
-    product = _get_product_or_raise(product_id)
+    product = _get_product_or_raise(product_id=product_id)
 
-    if data.product_name is not None and product_name_exists(data.product_name, exclude_id=product_id):
+    if data.product_name is not None and product_name_exists(product_name=data.product_name, exclude_id=product_id):
         raise ProductNameAlreadyExists()
 
-    fields = data.dict(exclude_unset=True)
+    fields = {
+        key: value
+        for key, value in data.dict(exclude_unset=True).items()
+        if value is not None
+    }
 
-    if "product_category_id" in fields and fields["product_category_id"] is not None:
+    if "product_category_id" in fields:
         category = get_category_by_id(fields["product_category_id"])
         if category is None:
             raise CategoryNotFound()
         fields["product_category_id"] = category
 
-    product = update_product(product, **fields)
+    product = update_product(product=product, **fields)
     return ProductOut.from_orm(product)
 
 
 def delete_product_for_admin(product_id: uuid.UUID) -> None:
-    product = _get_product_or_raise(product_id)
-    delete_product(product)
+    product = _get_product_or_raise(product_id=product_id)
+    delete_product(product=product)
 
 
 def activate_product_for_admin(product_id: uuid.UUID) -> ProductOut:
-    product = _get_product_or_raise(product_id)
-    product = activate_product(product)
+    product = _get_product_or_raise(product_id=product_id)
+    product = activate_product(product=product)
     return ProductOut.from_orm(product)
 
 
 def deactivate_product_for_admin(product_id: uuid.UUID) -> ProductOut:
-    product = _get_product_or_raise(product_id)
-    product = deactivate_product(product)
+    product = _get_product_or_raise(product_id=product_id)
+    product = deactivate_product(product=product)
     return ProductOut.from_orm(product)
