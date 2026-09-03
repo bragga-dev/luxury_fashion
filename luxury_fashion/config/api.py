@@ -11,10 +11,13 @@ from luxury_fashion.apps.products.api.category import router as category_router
 from luxury_fashion.apps.products.api.product import router as product_router
 from luxury_fashion.apps.products.api.frenet import  router as frenet_router
 from luxury_fashion.apps.cart.api.cart import  router as cart_router
-from luxury_fashion.apps.cart.api.cart import  router as cart_router
 from luxury_fashion.apps.payments.api.orders import router as orders_router
 from luxury_fashion.apps.payments.api.payments import router as payments_router
 from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_router
+from luxury_fashion.apps.products.api.frenet import router as frenet_router
+from luxury_fashion.apps.accounts.api.address import router as address_router
+
+
 
 from django_ratelimit.exceptions import Ratelimited
 import logging
@@ -48,10 +51,11 @@ api.add_router("/categories/", category_router, tags=["Category"])
 api.add_router("/products/", product_router, tags=["Produtos"])
 api.add_router("/shipping/", frenet_router, tags=["Shipping"])
 api.add_router("/cart/", cart_router, tags=["Cart"])
-api.add_router("/cart/", cart_router, tags=["Cart"])
 api.add_router("/orders/", orders_router, tags=["Orders"])
 api.add_router("/", payments_router, tags=["Payments"])
 api.add_router("/webhooks/asaas/", asaas_webhook_router, tags=["Webhooks"])
+api.add_router("/address/", address_router, tags=["Address"])
+
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
 
@@ -95,8 +99,6 @@ def permission_denied(request: HttpRequest, exc: PermissionDenied):
 @api.exception_handler(Ratelimited)
 def ratelimit_error(request: HttpRequest, exc: Ratelimited):
     return api.create_response(request, {"detail": f"Muitas tentativas. Tente novamente mais tarde."}, status=429,)
-
-
 
 
 @api.exception_handler(Exception)

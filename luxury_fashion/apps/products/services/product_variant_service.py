@@ -5,6 +5,7 @@ para a camada de API.
 """
 import uuid
 
+from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
 from luxury_fashion.apps.core.exceptions.products_exception import (
     ProductNotFound,
     VariantAlreadyExists,
@@ -52,7 +53,6 @@ def list_variants_for_all(product_id: uuid.UUID, active_only: bool = True) -> li
 
 
 def list_variants_queryset(product_id: uuid.UUID, active_only: bool = True):
-    """QuerySet bruto de variantes do produto, para paginação na camada de router."""
     return get_variants_by_product(product_id, active_only=active_only)
 
 
@@ -81,8 +81,12 @@ def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> Va
 
 
 def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id)
-    fields = data.dict(exclude_unset=True)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+    fields = {
+        key: value
+        for key, value in data.dict(exclude_unset=True).items()
+        if value is not None
+    }
 
     touches_combo = any(k in fields for k in ("size", "color", "gender"))
     if touches_combo:
@@ -99,30 +103,35 @@ def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> Va
 
 
 def delete_variant_for_admin(variant_id: uuid.UUID) -> None:
-    variant = _get_variant_or_raise(variant_id)
-    delete_variant(variant)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+    delete_variant(variant=variant)
 
 
 def activate_variant_for_admin(variant_id: uuid.UUID) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id)
-    variant = activate_variant(variant)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+    variant = activate_variant(variant=variant)
     return VariantOut.from_orm(variant)
 
 
 def deactivate_variant_for_admin(variant_id: uuid.UUID) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id)
-    variant = deactivate_variant(variant)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+    variant = deactivate_variant(variant=variant)
     return VariantOut.from_orm(variant)
 
 
 def adjust_variant_stock_for_admin(variant_id: uuid.UUID, delta: int) -> VariantOut:
-    """Ajusta o estoque em `delta` (positivo repõe, negativo baixa — ex.: venda)."""
-    variant = _get_variant_or_raise(variant_id)
-    variant = adjust_variant_stock(variant, delta)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+    if variant.stock + delta < 0:
+        raise InsufficientStock()
+    variant = adjust_variant_stock(variant=variant, delta=delta)
     return VariantOut.from_orm(variant)
 
 
 def set_variant_stock_for_admin(variant_id: uuid.UUID, stock: int) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id)
-    variant = set_variant_stock(variant, stock)
+    variant = _get_variant_or_raise(variant_id=variant_id)
+
+    if stock < 0:
+        raise InsufficientStock()
+
+    variant = set_variant_stock(variant=variant, stock=stock)
     return VariantOut.from_orm(variant)

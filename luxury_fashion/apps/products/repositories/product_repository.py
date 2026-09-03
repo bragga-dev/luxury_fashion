@@ -1,5 +1,10 @@
 """
 Product Repository — persistência de Product.
+
+Este módulo só deve conter acesso a dados (criar/ler/atualizar/excluir no
+banco). Qualquer decisão sobre *quais* campos aplicar, *se* uma transição de
+estado é permitida, mensagens de erro de domínio etc. é regra de negócio e
+pertence ao service.
 """
 from luxury_fashion.apps.products.models.product_category_model import ProductCategory
 from luxury_fashion.apps.products.models.product_model import Product
@@ -21,9 +26,14 @@ def create_product(
 
 
 def update_product(product: Product, **fields) -> Product:
+    """
+    Aplica no model exatamente os campos recebidos. A decisão de quais
+    campos entram aqui (ex.: só os explicitamente enviados, se `None` deve
+    ou não limpar um campo, etc.) é responsabilidade do service — o
+    repository apenas persiste o que já chegou pronto.
+    """
     for attr, value in fields.items():
-        if value is not None:
-            setattr(product, attr, value)
+        setattr(product, attr, value)
     product.full_clean()
     product.save()
     return product
@@ -34,14 +44,12 @@ def delete_product(product: Product) -> None:
 
 
 def activate_product(product: Product) -> Product:
-    if not product.is_active:
-        product.is_active = True
-        product.save(update_fields=["is_active"])
+    product.is_active = True
+    product.save(update_fields=["is_active"])
     return product
 
 
 def deactivate_product(product: Product) -> Product:
-    if product.is_active:
-        product.is_active = False
-        product.save(update_fields=["is_active"])
+    product.is_active = False
+    product.save(update_fields=["is_active"])
     return product
