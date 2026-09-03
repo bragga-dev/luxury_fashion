@@ -1,5 +1,10 @@
 """
 ProductVariant Repository — persistência de ProductVariant.
+
+Este módulo só deve conter acesso a dados. Regras de negócio (ex.: "não
+pode baixar estoque abaixo de zero", "se já está ativa não faz nada") são
+responsabilidade do service — o repository apenas persiste o valor final
+que já foi validado/decidido por quem o chamou.
 """
 from decimal import Decimal
 from typing import Optional
@@ -33,8 +38,7 @@ def create_variant(
 
 def update_variant(variant: ProductVariant, **fields) -> ProductVariant:
     for attr, value in fields.items():
-        if value is not None:
-            setattr(variant, attr, value)
+        setattr(variant, attr, value)
     variant.full_clean()
     variant.save()
     return variant
@@ -45,27 +49,19 @@ def delete_variant(variant: ProductVariant) -> None:
 
 
 def activate_variant(variant: ProductVariant) -> ProductVariant:
-    if not variant.is_active:
-        variant.is_active = True
-        variant.save(update_fields=["is_active"])
+    variant.is_active = True
+    variant.save(update_fields=["is_active"])
     return variant
 
 
 def deactivate_variant(variant: ProductVariant) -> ProductVariant:
-    if variant.is_active:
-        variant.is_active = False
-        variant.save(update_fields=["is_active"])
+    variant.is_active = False
+    variant.save(update_fields=["is_active"])
     return variant
 
 
 def adjust_variant_stock(variant: ProductVariant, delta: int) -> ProductVariant:
-    """
-    Ajusta o estoque em `delta` (positivo repõe, negativo baixa — ex.: venda).
-    """
-    new_stock = variant.stock + delta
-    if new_stock < 0:
-        raise ValueError("Estoque insuficiente para essa operação.")
-    variant.stock = new_stock
+    variant.stock = variant.stock + delta
     variant.full_clean()
     variant.save(update_fields=["stock"])
     return variant
