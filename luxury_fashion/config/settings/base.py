@@ -449,3 +449,10 @@ ORIGIN_ZIP_CODE = "45201347"
 # =========================================================
 FRENET_BASE_URL = env("FRENET_BASE_URL", default="https://api.frenet.com.br")
 FRENET_API_KEY = env("FRENET_API_KEY")
+
+
+# ==============================================================
+# CRYPTOGRAPHY
+# ==============================================================
+CPF_ENCRYPTION_KEY = env("CPF_ENCRYPTION_KEY")
+CPF_HASH_KEY = env("CPF_HASH_KEY")

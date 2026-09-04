@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from django.conf import settings
 
-from luxury_fashion.apps.accounts.repositories.client_repository import set_client_asaas_customer_id
 from luxury_fashion.apps.accounts.selectors.client_selector import get_client_by_user_id
 from luxury_fashion.apps.core.exceptions import (
     CpfOrCnpjRequired,
@@ -61,7 +60,7 @@ def _get_or_create_asaas_customer(user_id: uuid.UUID, cpf_cnpj: str | None = Non
         email=client.user_id.email,
         external_reference=str(client.client_id),
     )
-    set_client_asaas_customer_id(client, response["id"])
+    # set_client_asaas_customer_id(client, response["id"])
     return response["id"]
 
 

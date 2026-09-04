@@ -16,6 +16,8 @@ from luxury_fashion.apps.core.utils.generate_random_code import generate_random_
 
 
 class AsaasCustomer(models.Model):
-    user_id = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="asaas_customer")
+    user_id = models.OneToOneField("accounts.Client", on_delete=models.CASCADE, related_name="asaas_customer")
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     asaas_customer_id = models.CharField(_("ID do cliente na Asaas"), max_length=50, blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
