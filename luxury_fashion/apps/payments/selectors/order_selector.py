@@ -11,9 +11,7 @@ from luxury_fashion.apps.payments.models.order_model import Order
 
 
 def _with_items(qs: QuerySet[Order]) -> QuerySet[Order]:
-    items_qs = OrderItem.objects.select_related(
-        "variant_id__product_id__product_category_id"
-    ).prefetch_related("variant_id__product_id__images")
+    items_qs = OrderItem.objects.select_related("variant_id__product_id__product_category_id").prefetch_related("variant_id__product_id__images")
     return qs.select_related("shipping_address").prefetch_related(Prefetch("items", queryset=items_qs))
 
 

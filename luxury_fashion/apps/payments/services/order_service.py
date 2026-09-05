@@ -105,11 +105,7 @@ def list_orders_for_client(user_id: uuid.UUID) -> list[OrderOut]:
 
 
 def cancel_order(user_id: uuid.UUID, order_id: uuid.UUID) -> OrderOut:
-    """
-    Cancela um pedido ainda pendente e devolve o estoque reservado.
-    Pedidos já pagos/em processamento não são cancelados por aqui — isso
-    passa pelo fluxo de estorno de pagamento.
-    """
+  
     from luxury_fashion.apps.core.exceptions import OrderNotPayable
     from luxury_fashion.apps.payments.models.order_model import Order
 

@@ -25,10 +25,8 @@ from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import update_order_status
 from luxury_fashion.apps.payments.repositories.payment_repository import (
-    apply_asaas_response,
-    apply_pix_qrcode,
     create_payment,
-    update_status_from_webhook,
+    update_payment,
 )
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut
 from luxury_fashion.apps.payments.selectors.asaas_customer_selector import get_asaas_customer_by_client_id
@@ -40,7 +38,15 @@ from luxury_fashion.apps.payments.selectors.payment_selector import (
     get_payments_by_order,
 )
 
-# status da Asaas que contam como "cobrança paga" pro pedido
+from luxury_fashion.apps.payments.repositories.payment_repository import create_payment, update_payment
+from luxury_fashion.apps.payments.services.asaas_payment_mapper import (
+    map_payment_creation_response,
+    map_pix_qrcode_response,
+    map_refund_response,
+    map_webhook_payment_data,
+)
+
+
 _PAID_STATUSES = {"RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"}
 _REFUND_STATUSES = {"REFUNDED"}
 _REFUNDABLE_STATUSES = {"RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"}
@@ -86,7 +92,7 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
     due_date = date.today() + timedelta(days=settings.ASAAS_PAYMENT_DUE_DAYS)
 
     payment = create_payment(
-        order=order,
+        order_id=order,
         billing_type=data.billing_type.value,
         value=order.total_geral,
         due_date=due_date,
@@ -110,11 +116,11 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
         credit_card=credit_card,
         credit_card_holder_info=credit_card_holder_info,
     )
-    payment = apply_asaas_response(payment, response)
+    payment = update_payment(payment, **map_payment_creation_response(response))
 
     if data.billing_type.value == Payment.PaymentMode.PIX:
         pix_data = asaas.get_pix_qrcode(payment.asaas_payment_id)
-        payment = apply_pix_qrcode(payment, pix_data)
+        payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
 
     update_order_status(order, Order.StatusOrder.PROCESSING)
 
@@ -145,7 +151,7 @@ def refund_payment(user_id: uuid.UUID, payment_id: uuid.UUID, value: Decimal | N
 
     asaas = AsaasClient()
     response = asaas.refund_payment(payment.asaas_payment_id, value=value, description=description)
-    payment = update_status_from_webhook(payment, response.get("status", "REFUNDED"))
+    payment = update_payment(payment, **map_refund_response(response))
     return PaymentOut.from_orm(payment)
 
 
@@ -159,12 +165,12 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
 
     payment = get_payment_by_asaas_id(asaas_payment_id)
     if payment is None:
-        # cobrança que a gente não gerou (ou já foi limpa) — ignora
         return
 
     status = payment_data.get("status")
     if not status:
         return
+    payment = update_payment(payment, **map_webhook_payment_data(status, payment_data))
 
     payment = update_status_from_webhook(payment, status, payment_data)
 
