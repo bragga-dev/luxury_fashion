@@ -33,7 +33,7 @@ class Payment(models.Model):
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order_id = models.ForeignKey("payments.Order", on_delete=models.CASCADE, related_name="payments")
     asaas_payment_id = models.CharField(_("ID da cobrança no Asaas"), max_length=50, blank=True, null=True, db_index=True)
-    value = models.DecimalField(_("Valor do Serviço"), max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    value = models.DecimalField(_("Valor do Produto"), max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     billing_type = models.CharField(_("Forma de Pagamento"), max_length=20, choices=PaymentMode.choices, default=PaymentMode.PIX, db_index=True)
     status = models.CharField(_("Status do Pagamento"), max_length=30, choices=PaymentStatus.choices, default=PaymentStatus.PENDING, db_index=True)
     due_date = models.DateField(_("Data limite para efetuar pagamento"))

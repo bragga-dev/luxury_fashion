@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from luxury_fashion.apps.payments.models.asaas_customer_model import AsaasCustomer
 from luxury_fashion.apps.payments.models.order_item_model import OrderItem
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
@@ -34,3 +35,10 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter = ("billing_type", "status")
     search_fields = ("asaas_payment_id", "order_id__code")
     readonly_fields = ("payment_id", "created_at", "updated_at")
+
+
+@admin.register(AsaasCustomer)
+class AsaasCustomerAdmin(admin.ModelAdmin):
+    list_display = ("client_id", "asaas_customer_id", "created_at")
+    search_fields = ("asaas_customer_id", "client_id__first_name", "client_id__last_name")
+    readonly_fields = ("customer_id", "created_at", "updated_at")

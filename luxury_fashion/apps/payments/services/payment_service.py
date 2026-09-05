@@ -22,6 +22,7 @@ from luxury_fashion.apps.core.exceptions import (
 from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
+from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import update_order_status
 from luxury_fashion.apps.payments.repositories.payment_repository import (
     apply_asaas_response,
@@ -30,6 +31,7 @@ from luxury_fashion.apps.payments.repositories.payment_repository import (
     update_status_from_webhook,
 )
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut
+from luxury_fashion.apps.payments.selectors.asaas_customer_selector import get_asaas_customer_by_client_id
 from luxury_fashion.apps.payments.selectors.order_selector import get_order_by_id_and_user
 from luxury_fashion.apps.payments.selectors.payment_selector import (
     get_open_payment_for_order,
@@ -47,20 +49,23 @@ _REFUNDABLE_BILLING_TYPES = {Payment.PaymentMode.PIX, Payment.PaymentMode.CREDIT
 
 def _get_or_create_asaas_customer(user_id: uuid.UUID, cpf_cnpj: str | None = None) -> str:
     client = get_client_by_user_id(user_id)
-    if client.asaas_customer_id:
-        return client.asaas_customer_id
 
-    if not (cpf_cnpj or client.cpf):
+    existing = get_asaas_customer_by_client_id(client.client_id)
+    if existing is not None:
+        return existing.asaas_customer_id
+
+    cpf = cpf_cnpj or client.cpf
+    if not cpf:
         raise CpfOrCnpjRequired()
 
     asaas = AsaasClient()
     response = asaas.create_customer(
         name=client.get_full_name(),
-        cpf_cnpj=cpf_cnpj or client.cpf,
+        cpf_cnpj=cpf,
         email=client.user_id.email,
         external_reference=str(client.client_id),
     )
-    # set_client_asaas_customer_id(client, response["id"])
+    create_asaas_customer(client, response["id"])
     return response["id"]
 
 
