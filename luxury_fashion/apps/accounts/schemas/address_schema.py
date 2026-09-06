@@ -52,14 +52,15 @@ class AddressOut(Schema):
     neighborhood: str
     city: str
     state: BrazilianStateEnum
+    state_label: str
     country: str 
     is_preferential: bool
 
     @classmethod
-    def from_orm(cls, address: AddressesClient) -> "AddressesClient":
+    def from_orm(cls, address: AddressesClient) -> "AddressOut":
         return cls(
             address_id=address.address_id,
-            client=ClientOut.from_orm(address.client),
+            client=ClientOut.from_orm(address.client_id),
             cep=address.cep,
             street=address.street,
             number=address.number,
@@ -75,7 +76,6 @@ class AddressOut(Schema):
 
 
 class AddressCreateIn(Schema):
-    client_id: uuid.UUID
     cep: Optional[str] = None
     street: Optional[str] = None
     number: Optional[str] = None

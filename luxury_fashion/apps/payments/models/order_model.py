@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from luxury_fashion.apps.core.exceptions.payment_exception import InvalidOrderStatusTransition
+from luxury_fashion.apps.core.exceptions.service_exception import  InvalidOrderStatusTransition
 from luxury_fashion.apps.core.utils.generate_random_code import generate_random_code
 
 

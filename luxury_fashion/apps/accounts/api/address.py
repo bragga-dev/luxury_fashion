@@ -22,6 +22,7 @@ from luxury_fashion.apps.accounts.services.address_service import (
     update_address_for_client,
     update_address_check_up,
     update_address_check_down,
+    delete_address_for_client,
     get_address_for_client,
     get_preferential_address_for_client,
     get_addresses_for_client,
@@ -30,7 +31,7 @@ from luxury_fashion.apps.accounts.services.address_service import (
     validate_address_belongs_to_client,
 )
 from luxury_fashion.apps.accounts.models.user_model import User
-from luxury_fashion.apps.core.exceptions.address import AddressNotFound
+from luxury_fashion.apps.core.exceptions.address import AddressNotFound, CannotDeletePreferentialAddress
 from luxury_fashion.apps.core.exceptions.permissions import ClientNotFoundError
 from luxury_fashion.apps.core.exceptions.user import UserNotFound
 from luxury_fashion.apps.core.permissions.auth_classes import ClientOnlyAuth
@@ -59,7 +60,7 @@ def list_my_addresses_router(request):
     """
     try:
         user: User = request.auth
-        addresses = get_addresses_for_client(user_id=user.id)
+        addresses = get_addresses_for_client(user_id=user.user_id)
         return 200, addresses
     except UserNotFound as e:
         return 404, {"detail": str(e)}
@@ -81,7 +82,7 @@ def count_my_addresses_router(request):
     """
     try:
         user: User = request.auth
-        count = get_addresses_count_for_client(user_id=user.id)
+        count = get_addresses_count_for_client(user_id=user.user_id)
         return 200, {"count": count}
     except UserNotFound as e:
         return 404, {"detail": str(e)}
@@ -134,7 +135,7 @@ def get_my_preferential_address_router(request):
     """
     try:
         user: User = request.auth
-        address = get_preferential_address_for_client(user_id=user.id)
+        address = get_preferential_address_for_client(user_id=user.user_id)
         if address is None:
             return 404, {"detail": "Nenhum endereço preferencial encontrado."}
         return 200, address
@@ -159,7 +160,7 @@ def get_my_default_address_router(request):
     """
     try:
         user: User = request.auth
-        address = get_default_address_for_client(user_id=user.id)
+        address = get_default_address_for_client(user_id=user.user_id)
         if address is None:
             return 404, {"detail": "Nenhum endereço cadastrado."}
         return 200, address
@@ -180,10 +181,7 @@ def get_my_default_address_router(request):
     ),
 )
 @ratelimit(key="user", rate="10/h", block=True)
-def create_my_address_router(request, payload: AddressCreateIn):
-    """
-    Cadastra um novo endereço para o cliente autenticado.
-    """
+def create_my_address_router(request,  payload: AddressCreateIn):
     try:
         user: User = request.auth
         address = register_address_for_client(
@@ -231,6 +229,36 @@ def update_my_address_router(request, address_id: uuid.UUID, payload: AddressUpd
     except DjangoValidationError as e:
         return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
     except Exception as e:
+        return 400, {"detail": str(e)}
+
+
+# ── Exclusão ───────────────────────────────────────────────────────────────────
+
+@router.delete(
+    "/my-addresses/{address_id}",
+    response={204: None, 400: MessageOut, 403: MessageOut, 404: MessageOut},
+    auth=ClientOnlyAuth(),
+    summary="Remove um endereço do cliente",
+    description=(
+        "Remove definitivamente um endereço do cliente autenticado. "
+        "Se o endereço for o preferencial e houver outros cadastrados, "
+        "a exclusão é bloqueada até que outro endereço seja definido como preferencial."
+    ),
+)
+@ratelimit(key="user", rate="10/h", block=True)
+def delete_my_address_router(request, address_id: uuid.UUID):
+    """
+    Remove um endereço do cliente autenticado.
+    """
+    try:
+        user: User = request.auth
+        delete_address_for_client(user_id=user.user_id, address_id=address_id)
+        return 204, None
+    except (UserNotFound, AddressNotFound) as e:
+        return 404, {"detail": str(e)}
+    except ClientNotFoundError as e:
+        return 403, {"detail": str(e)}
+    except CannotDeletePreferentialAddress as e:
         return 400, {"detail": str(e)}
 
 

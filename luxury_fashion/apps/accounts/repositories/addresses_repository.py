@@ -29,6 +29,7 @@ def create_address(
     fields = {k: v for k, v in fields.items() if v is not None}
 
     address = AddressesClient(client_id=client_id, **fields)
+    address.full_clean()
     address.save()
     return address
 

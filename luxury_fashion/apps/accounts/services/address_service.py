@@ -6,29 +6,28 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from luxury_fashion.apps.accounts.models.addresses_client_model import AddressesClient
 from luxury_fashion.apps.accounts.repositories.addresses_repository import (
     create_address,
+    delete_address,
     update_address,
     update_status_address_down,
     update_status_address_up,
 )
-from luxury_fashion.apps.accounts.repositories.client_repository import (
-    remove_client_photo,
-    set_client_photo,
-)
 from luxury_fashion.apps.accounts.schemas.address_schema import (
     AddressCreateIn,
     AddressOut,
-    AddressesList,
     AddressUpdateIn,
 )
 from luxury_fashion.apps.accounts.selectors.address_selector import (
     get_address_by_id,
     get_address_is_preferential,
-    get_address_by_client,  # Adicionar este import
-    count_addresses_by_client,  # Adicionar este import
+    get_address_by_client,
+    count_addresses_by_client,
 )
 from luxury_fashion.apps.accounts.selectors.client_selector import get_client_by_user_id
-from luxury_fashion.apps.core.exceptions.address import AddressNotFound
-from luxury_fashion.apps.core.exceptions.permissions import ClientNotFoundError, PermissionDenied
+from luxury_fashion.apps.core.exceptions.address import (
+    AddressNotFound,
+    CannotDeletePreferentialAddress,
+)
+from luxury_fashion.apps.core.exceptions.permissions import ClientNotFoundError
 from luxury_fashion.apps.core.exceptions.user import UserNotFound
 
 
@@ -42,7 +41,12 @@ def _get_own_client_address(user_id: UUID, address_id: UUID) -> AddressesClient:
         raise ClientNotFoundError()
 
     address = get_address_by_id(address_id=address_id)
-    if address is None or address.client_id != client.client_id:
+    # NOTA: o campo FK no model se chama "client_id" (não "client"), então o
+    # Django usa `address.client_id` para o OBJETO Client relacionado, e
+    # `address.client_id_id` para o UUID bruto. Comparar `address.client_id`
+    # (objeto) com `client.client_id` (UUID) nunca é verdadeiro — por isso
+    # toda checagem de posse falhava e retornava "endereço não encontrado".
+    if address is None or address.client_id_id != client.client_id:
         raise AddressNotFound()
     return address
 
@@ -62,7 +66,7 @@ def register_address_for_client(user_id: UUID, data: AddressCreateIn) -> Address
     client = _get_client_by_user_id_or_raise(user_id)
     
     address = create_address(
-        client_id=client.client_id,
+        client_id=client,
         cep=data.cep,
         street=data.street,
         number=data.number,
@@ -104,6 +108,27 @@ def update_address_check_down(user_id: UUID, address_id: UUID) -> AddressOut:
     address = _get_own_client_address(user_id=user_id, address_id=address_id)
     address = update_status_address_down(address)
     return AddressOut.from_orm(address)
+
+
+def delete_address_for_client(user_id: UUID, address_id: UUID) -> None:
+    """
+    Remove um endereço do cliente.
+
+    Se o endereço removido for o preferencial e existirem outros endereços,
+    a exclusão é bloqueada — o cliente precisa marcar outro como preferencial
+    primeiro (senão o cliente ficaria sem endereço preferencial definido).
+    """
+    address = _get_own_client_address(user_id=user_id, address_id=address_id)
+
+    if address.is_preferential:
+        client = _get_client_by_user_id_or_raise(user_id)
+        if count_addresses_by_client(client_id=client.client_id) > 1:
+            raise CannotDeletePreferentialAddress()
+
+    delete_address(address)
+
+
+# ── Funções de Validação ──────────────────────────────────────────────────
 
 
 # ── Operações de Leitura (Corrigidas) ──────────────────────────────────

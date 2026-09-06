@@ -1,6 +1,6 @@
 
 from luxury_fashion.apps.payments.services.order_service import (
-    cancel_order,
+    cancel_order_by_client,
     create_order_from_cart,
     get_order_for_client,
     list_orders_for_client,
@@ -23,7 +23,7 @@ from luxury_fashion.apps.payments.services.asaas_payment_mapper import (
 
 __all__ = [
     
-    "cancel_order",
+    "cancel_order_by_client",
     "create_order_from_cart",
     "get_order_for_client",
     "list_orders_for_client",

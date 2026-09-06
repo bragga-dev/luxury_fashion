@@ -119,5 +119,5 @@ def cancel_order_by_client(user_id: uuid.UUID, order_id: uuid.UUID, reason: str 
     for item in order.items.all():
         adjust_variant_stock(variant=item.variant_id, delta=item.order_item_quantity)
 
-    canceled_order(order=order, reason=reason or "Cancelado pelo cliente.")
+    canceled_order(order=order, reason=reason)
     return _order_out_for(user_id=user_id, order_id=order_id)
