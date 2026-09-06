@@ -24,9 +24,7 @@ from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import (
-    failed_order,
     refunded_order,
-    canceled_order,
     completed_order,
 )
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut
