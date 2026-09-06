@@ -13,7 +13,6 @@ from luxury_fashion.apps.payments.schemas.order_item_schema import OrderItemOut
 class StatusOrderEnum(str, Enum):
     """Espelha Order.StatusOrder."""
     PENDING = "PENDING"
-    PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
     REFUNDED = "REFUNDED"
@@ -28,6 +27,10 @@ class OrderCreateIn(Schema):
     nome de outro usuário.
     """
     shipping_address_id: uuid.UUID
+
+
+class OrderCancelIn(Schema):
+    reason: Optional[str] = None
 
 
 class OrderOut(Schema):

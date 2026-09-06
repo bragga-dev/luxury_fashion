@@ -13,9 +13,9 @@ from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
 from luxury_fashion.apps.core.permissions.auth_classes import ClientOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
-from luxury_fashion.apps.payments.schemas.order_schema import OrderCreateIn, OrderOut
+from luxury_fashion.apps.payments.schemas.order_schema import OrderCancelIn, OrderCreateIn, OrderOut
 from luxury_fashion.apps.payments.services.order_service import (
-    cancel_order,
+    cancel_order_by_client,
     create_order_from_cart,
     get_order_for_client,
     list_orders_for_client,
@@ -79,10 +79,11 @@ def get_order_router(request, order_id: uuid.UUID):
     summary="Cancela um pedido pendente e devolve o estoque",
 )
 @ratelimit(key="user", rate="10/m", block=True)
-def cancel_order_router(request, order_id: uuid.UUID):
+def cancel_order_router(request, order_id: uuid.UUID, payload: OrderCancelIn = None):
     try:
         user: User = request.auth
-        return 200, cancel_order(user.user_id, order_id)
+        reason = payload.reason if payload else None
+        return 200, cancel_order_by_client(user.user_id, order_id, reason=reason)
     except OrderNotFound as e:
         return 404, {"detail": str(e)}
     except OrderNotPayable as e:

@@ -16,8 +16,8 @@ from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
 from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_id
 from luxury_fashion.apps.payments.repositories.order_repository import (
     bulk_create_order_items,
+    canceled_order,
     create_order,
-    update_order_status,
 )
 from luxury_fashion.apps.payments.schemas.order_schema import OrderCreateIn, OrderOut
 from luxury_fashion.apps.payments.selectors.order_selector import (
@@ -32,7 +32,7 @@ def _validate_shipping_address(user_id: uuid.UUID, shipping_address_id: uuid.UUI
     if client is None:
         raise UserNotFound()
 
-    address = get_address_by_id(shipping_address_id=shipping_address_id)
+    address = get_address_by_id(address_id=shipping_address_id)
     if address is None or address.client_id_id != client.client_id:
         raise PermissionDenied("Endereço não pertence ao cliente autenticado.")
     return address
@@ -104,8 +104,8 @@ def list_orders_for_client(user_id: uuid.UUID) -> list[OrderOut]:
     return [OrderOut.from_orm(order) for order in orders]
 
 
-def cancel_order(user_id: uuid.UUID, order_id: uuid.UUID) -> OrderOut:
-  
+def cancel_order_by_client(user_id: uuid.UUID, order_id: uuid.UUID, reason: str | None = None) -> OrderOut:
+
     from luxury_fashion.apps.core.exceptions import OrderNotPayable
     from luxury_fashion.apps.payments.models.order_model import Order
 
@@ -119,5 +119,5 @@ def cancel_order(user_id: uuid.UUID, order_id: uuid.UUID) -> OrderOut:
     for item in order.items.all():
         adjust_variant_stock(variant=item.variant_id, delta=item.order_item_quantity)
 
-    update_order_status(order, Order.StatusOrder.CANCELLED)
+    canceled_order(order=order, reason=reason or "Cancelado pelo cliente.")
     return _order_out_for(user_id=user_id, order_id=order_id)

@@ -1,9 +1,9 @@
 from django.utils.translation import gettext_lazy as _
 
 
-class ServiceNotFound(Exception):
+class OrderNotFound(Exception):
     def __init__(self, message=None):
-        self.message = message or _("Serviço não encontrado.")
+        self.message = message or _("Pedido não encontrado.")
         super().__init__(self.message)
 
 
@@ -58,9 +58,9 @@ class SchedulingCannotBeCanceled(Exception):
         super().__init__(self.message)
 
 
-class InvalidSchedulingStatusTransition(Exception):
+class InvalidOrderStatusTransition(Exception):
     def __init__(self, message=None):
-        self.message = message or _("Transição de status inválida para este agendamento.")
+        self.message = message or _("Transição de status inválida para este pedido.")
         super().__init__(self.message)
 
 

@@ -47,7 +47,21 @@ def bulk_create_order_items(order: Order, items: Iterable[dict]) -> list[OrderIt
     return OrderItem.objects.bulk_create(objs)
 
 
-def update_order_status(order: Order, status: str) -> Order:
-    order.order_status = status
-    order.save(update_fields=["order_status", "updated_at"])
+def completed_order(order: Order) -> Order:
+    order.complete()
+    return order
+
+
+def canceled_order(order: Order, reason: str) -> Order:
+    order.cancel(reason)
+    return order
+
+
+def failed_order(order: Order) -> Order:
+    order.fail()
+    return order
+
+
+def refunded_order(order: Order) -> Order:
+    order.refund()
     return order

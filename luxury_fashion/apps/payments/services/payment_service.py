@@ -23,10 +23,11 @@ from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
-from luxury_fashion.apps.payments.repositories.order_repository import update_order_status
-from luxury_fashion.apps.payments.repositories.payment_repository import (
-    create_payment,
-    update_payment,
+from luxury_fashion.apps.payments.repositories.order_repository import (
+    failed_order,
+    refunded_order,
+    canceled_order,
+    completed_order,
 )
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut
 from luxury_fashion.apps.payments.selectors.asaas_customer_selector import get_asaas_customer_by_client_id
@@ -102,9 +103,7 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
 
     asaas = AsaasClient()
     credit_card = data.credit_card.model_dump(by_alias=False) if data.credit_card else None
-    credit_card_holder_info = (
-        data.credit_card_holder_info.model_dump(by_alias=False) if data.credit_card_holder_info else None
-    )
+    credit_card_holder_info = (data.credit_card_holder_info.model_dump(by_alias=False) if data.credit_card_holder_info else None)
 
     response = asaas.create_payment(
         customer_id=customer_id,
@@ -121,9 +120,6 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
     if data.billing_type.value == Payment.PaymentMode.PIX:
         pix_data = asaas.get_pix_qrcode(payment.asaas_payment_id)
         payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
-
-    update_order_status(order, Order.StatusOrder.PROCESSING)
-
     return PaymentOut.from_orm(payment)
 
 
@@ -172,10 +168,8 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
         return
     payment = update_payment(payment, **map_webhook_payment_data(status, payment_data))
 
-    payment = update_status_from_webhook(payment, status, payment_data)
-
     order = payment.order_id
     if status in _PAID_STATUSES and order.order_status != Order.StatusOrder.COMPLETED:
-        update_order_status(order, Order.StatusOrder.COMPLETED)
+        completed_order(order=order)
     elif status in _REFUND_STATUSES:
-        update_order_status(order, Order.StatusOrder.REFUNDED)
+        refunded_order(order=order)
