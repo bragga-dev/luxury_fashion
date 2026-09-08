@@ -21,7 +21,7 @@ router = Router()
 
 
 @router.post(
-    "/webhook",
+    "",
     response={200: MessageOut, 401: MessageOut, 500: MessageOut},
     auth=None,
     summary="Recebe eventos de cobrança da Asaas",
