@@ -2,7 +2,6 @@ from django.utils.translation import gettext as _
 
 
 class AsaasAPIError(Exception):
-    """Erro genérico de comunicação com a API da Asaas."""
 
     def __init__(
         self,
@@ -51,11 +50,7 @@ class PaymentNotFound(Exception):
 
 
 class CpfOrCnpjRequired(Exception):
-    """
-    Só é levantada na 1ª cobrança via cartão de um cliente: a Asaas exige
-    CPF/CNPJ pra criar o customer dele. Nas cobranças seguintes o
-    customer_id já fica salvo no Client e isso não é mais pedido.
-    """
+
     def __init__(self, message: str | None = None):
         self.message = message or _(
             "Informe o CPF ou CNPJ para pagar com cartão de crédito."
@@ -64,12 +59,7 @@ class CpfOrCnpjRequired(Exception):
 
 
 class PaymentNotRefundable(Exception):
-    """
-    Cobrança fora das condições de estorno: ainda não foi paga, já foi
-    totalmente estornada, é boleto (fluxo próprio, exige dados bancários
-    do pagador — não suportado por aqui), ou o valor pedido não cabe no
-    saldo disponível da cobrança.
-    """
+   
     def __init__(self, message: str | None = None):
         self.message = message or _(
             "Essa cobrança não pode ser estornada — só cobranças pagas via "
@@ -81,4 +71,12 @@ class PaymentNotRefundable(Exception):
 class InvalidWebhookToken(Exception):
     def __init__(self, message: str | None = None):
         self.message = message or _("Token de webhook inválido.")
+        super().__init__(self.message)
+
+
+class InvalidOrderStatusTransition(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message or _(
+            "Transição de status inválida para este pedido."
+        )
         super().__init__(self.message)

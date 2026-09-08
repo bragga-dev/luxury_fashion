@@ -8,7 +8,7 @@ from colorlog import ColoredFormatter
 # BASE
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 # =========================================================
@@ -312,7 +312,6 @@ ASAAS_BASE_URL = env("ASAAS_BASE_URL", default="https://api-sandbox.asaas.com/v3
 ASAAS_CUSTOMER_ID = env("ASAAS_CUSTOMER_ID")
 ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN")
 ASAAS_PAYMENT_DUE_DAYS = env.int("ASAAS_PAYMENT_DUE_DAYS", default=1)
-SCHEDULING_RESERVATION_TTL_MINUTES = env.int("SCHEDULING_RESERVATION_TTL_MINUTES", default=30)
 
 
 # =========================================================

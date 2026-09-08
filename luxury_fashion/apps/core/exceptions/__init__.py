@@ -16,6 +16,7 @@ from luxury_fashion.apps.core.exceptions.payment_exception import (
     CpfOrCnpjRequired,
     PaymentNotRefundable,
     InvalidWebhookToken,
+    InvalidOrderStatusTransition,
 )
 
 from luxury_fashion.apps.core.exceptions.products_exception import (
@@ -70,4 +71,5 @@ __all__ = [
     "CpfOrCnpjRequired",
     "PaymentNotRefundable",
     "InvalidWebhookToken",
+    "InvalidOrderStatusTransition",
 ]

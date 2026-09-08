@@ -23,9 +23,12 @@ staticfiles/
 *.override.yml
 
 # DB
-*.sqlite3venv/
-.coverage
+*.sqlite3
+
+# Venv
 venv/
 .coverage
-venv/
+
+# Celery
 celerybeat-schedule
+celerybeat.pid
