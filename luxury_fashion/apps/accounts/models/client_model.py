@@ -12,6 +12,7 @@ from datetime import timezone
 from django.utils import timezone 
 
 from luxury_fashion.apps.core.validators.validate_cpf_or_cnpj import validate_cpf
+from luxury_fashion.apps.core.security.cpf_crypto import decrypt_cpf, encrypt_cpf, hash_cpf, only_digits
 
 def client_photo_path(instance, filename):
     ext = filename.rsplit(".", 1)[-1].lower()
@@ -32,12 +33,29 @@ class Client(models.Model):
     gender = models.CharField(_("Gênero"), max_length=10, choices=Gender.CHOICES, default=Gender.OTHER)
     birth_date = models.DateField(_("Data de nascimento"), blank=True, null=True)
     photo = models.ImageField(upload_to=client_photo_path, default=DEFAULT_CLIENT_PHOTO, blank=True, null=True, validators=[validate_image_file], help_text=_('Formatos aceitos: jpg, jpeg ou png. Máx: 5MB.'))
-    asaas_customer_id = models.CharField(_("ID do cliente na Asaas"), max_length=50, blank=True, null=True, db_index=True)
-    cpf = models.CharField(_("CPF"), max_length=11, blank=True, null=True, validators=[validate_cpf])
+    cpf_encrypted = models.TextField(_("CPF (criptografado)"), blank=True, null=True)
+    cpf_hash = models.CharField(_("Hash do CPF"), max_length=64, blank=True, null=True, unique=True, db_index=True)
+
+    @property
+    def cpf(self) -> str | None:
+        if not self.cpf_encrypted:
+            return None
+        return decrypt_cpf(self.cpf_encrypted)
+
+    @cpf.setter
+    def cpf(self, value: str | None):
+        if not value:
+            self.cpf_encrypted = None
+            self.cpf_hash = None
+            return
+        digits = only_digits(value)
+        validate_cpf(digits)
+        self.cpf_encrypted = encrypt_cpf(digits)
+        self.cpf_hash = hash_cpf(digits)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.user_id.email})"
-    
+
     class Meta:
         verbose_name = _("Cliente")
         verbose_name_plural = _("Clientes")
@@ -55,12 +73,11 @@ class Client(models.Model):
             except Exception:
                 pass
         return self.photo.storage.url(DEFAULT_CLIENT_PHOTO)    
-    
 
     def get_full_name(self):
         full_name = " ".join(filter(None, [self.first_name, self.last_name])).strip()
         return full_name or self.username or f"Client {self.client_id}"
-    
+
     @staticmethod
     def normalize_phone(phone_str: str) -> str:
         number = parse(phone_str, "BR")

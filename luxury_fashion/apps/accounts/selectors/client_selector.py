@@ -448,7 +448,6 @@ def filter_clients(
         birth_date_after: Data de nascimento após
         birth_date_before: Data de nascimento antes
         has_phone: Tem telefone cadastrado
-        has_instagram: Tem Instagram cadastrado
         has_photo: Tem foto cadastrada
         order_by: Campo para ordenação
         
@@ -485,12 +484,6 @@ def filter_clients(
             q &= Q(phone__isnull=False) & ~Q(phone='')
         else:
             q &= Q(phone__isnull=True) | Q(phone='')
-    
-    if has_cpf is not None:
-        if has_cpf:
-            q &= Q(instagram__isnull=False) & ~Q(instagram='')
-        else:
-            q &= Q(instagram__isnull=True) | Q(instagram='')
     
     if has_photo is not None:
         if has_photo:
@@ -610,15 +603,5 @@ def get_clients_without_phone() -> List[Client]:
         List[Client]: Lista de clientes sem telefone
     """
     return Client.objects.filter(Q(phone__isnull=True) | Q(phone='')).select_related('user_id')
-
-
-def get_clients_without_instagram() -> List[Client]:
-    """
-    Retorna clientes sem Instagram cadastrado.
-    
-    Returns:
-        List[Client]: Lista de clientes sem Instagram
-    """
-    return Client.objects.filter(Q(instagram__isnull=True) | Q(instagram='')).select_related('user_id')
 
 

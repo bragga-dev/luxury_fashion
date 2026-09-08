@@ -28,7 +28,6 @@ class ClientOut(Schema):
     gender: GenderEnum
     gender_label: str
     birth_date: Optional[date] = None  
-    asaas_customer_id: Optional[str]
     cpf: Optional[str] = None
     
     @classmethod
@@ -39,13 +38,11 @@ class ClientOut(Schema):
             username=client.username,
             first_name=client.first_name,
             last_name=client.last_name,
-            instagram=client.instagram,
             phone=str(client.phone) if client.phone else None,  
             gender=client.gender,
             gender_label=client.get_gender_display(),
             birth_date=client.birth_date,
             photo_url=client.photo_url,  
-            asaas_customer_id=client.asaas_customer_id,  
             cpf=client.cpf,  
         )
 

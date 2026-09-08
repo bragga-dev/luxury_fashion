@@ -47,5 +47,4 @@ __all__ = [
     # Bulk Operations
     'get_clients_by_ids',
     'get_clients_without_phone',
-    'get_clients_without_instagram',
 ]

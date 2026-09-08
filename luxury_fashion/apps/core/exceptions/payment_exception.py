@@ -16,18 +16,39 @@ class AsaasAPIError(Exception):
         super().__init__(self.message)
 
 
+class OrderNotFound(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message or _("Pedido não encontrado.")
+        super().__init__(self.message)
+
+
+class EmptyCart(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message or _("Seu carrinho está vazio.")
+        super().__init__(self.message)
+
+
+class OrderNotPayable(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message or _(
+            "Este pedido não está mais disponível para pagamento."
+        )
+        super().__init__(self.message)
+
+
+class OrderAlreadyPaid(Exception):
+    def __init__(self, message: str | None = None):
+        self.message = message or _(
+            "Já existe uma cobrança em aberto ou paga para este pedido."
+        )
+        super().__init__(self.message)
+
+
 class PaymentNotFound(Exception):
     def __init__(self, message: str | None = None):
         self.message = message or _("Pagamento não encontrado.")
         super().__init__(self.message)
 
-
-class SchedulingAlreadyPaid(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _(
-            "Já existe uma cobrança em aberto ou paga para este agendamento."
-        )
-        super().__init__(self.message)
 
 class CpfOrCnpjRequired(Exception):
     """
@@ -40,6 +61,7 @@ class CpfOrCnpjRequired(Exception):
             "Informe o CPF ou CNPJ para pagar com cartão de crédito."
         )
         super().__init__(self.message)
+
 
 class PaymentNotRefundable(Exception):
     """
@@ -55,44 +77,8 @@ class PaymentNotRefundable(Exception):
         )
         super().__init__(self.message)
 
-class SchedulingPaymentPending(Exception):
+
+class InvalidWebhookToken(Exception):
     def __init__(self, message: str | None = None):
-        self.message = message or _(
-            "Este agendamento possui um pagamento pendente."
-        )
-        super().__init__(self.message)
-
-class CommissionNotFound(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _("Comissão não encontrada.")
-        super().__init__(self.message)
-
-
-class CommissionAlreadyExists(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _("Este agendamento já possui uma comissão registrada.")
-        super().__init__(self.message)
-
-
-class SchedulingNotCompleted(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _(
-            "Só é possível gerar comissão para um atendimento concluído (COMPLETED)."
-        )
-        super().__init__(self.message)
-
-
-class CommissionCannotBeModified(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _(
-            "Esta comissão não pode mais ser alterada — só comissões pendentes podem ser editadas ou canceladas."
-        )
-        super().__init__(self.message)
-
-
-class CommissionNotPaid(Exception):
-    def __init__(self, message: str | None = None):
-        self.message = message or _(
-            "Só é possível reverter comissões que estejam pagas."
-        )
+        self.message = message or _("Token de webhook inválido.")
         super().__init__(self.message)
