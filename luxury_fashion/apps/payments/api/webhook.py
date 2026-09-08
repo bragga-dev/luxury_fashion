@@ -7,7 +7,6 @@ configurado no painel da Asaas e comparado com ASAAS_WEBHOOK_TOKEN.
 import logging
 
 from ninja import Router
-import hmac
 from django.conf import settings
 from luxury_fashion.apps.core.exceptions import InvalidWebhookToken
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
@@ -23,7 +22,7 @@ router = Router()
 
 @router.post(
     "/webhook",
-    response={200: MessageOut, 401: MessageOut},
+    response={200: MessageOut, 401: MessageOut, 500: MessageOut},
     auth=None,
     summary="Recebe eventos de cobrança da Asaas",
 )

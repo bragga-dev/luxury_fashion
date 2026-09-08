@@ -3,6 +3,7 @@ Payment Service — orquestra a criação/consulta/estorno de cobranças na
 Asaas e a aplicação do webhook. Fala com o AsaasClient; repositories só
 persistem o que o service já decidiu.
 """
+import hmac
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
@@ -150,7 +151,7 @@ def refund_payment(user_id: uuid.UUID, payment_id: uuid.UUID, value: Decimal | N
 
 
 def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
-    if not settings.ASAAS_WEBHOOK_TOKEN or token != settings.ASAAS_WEBHOOK_TOKEN:
+    if not settings.ASAAS_WEBHOOK_TOKEN or not hmac.compare_digest(token, settings.ASAAS_WEBHOOK_TOKEN):
         raise InvalidWebhookToken()
 
     asaas_payment_id = payment_data.get("id")

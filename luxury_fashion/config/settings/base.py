@@ -2,7 +2,6 @@ from pathlib import Path
 from datetime import timedelta
 import environ
 from colorlog import ColoredFormatter
-import os
 
 
 # =========================================================
@@ -308,7 +307,7 @@ LOGGING = {
 # =========================================================
 # ASAAS
 # =========================================================
-ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "").removeprefix("\\")
+ASAAS_API_KEY = env("ASAAS_API_KEY")
 ASAAS_BASE_URL = env("ASAAS_BASE_URL", default="https://api-sandbox.asaas.com/v3")
 ASAAS_CUSTOMER_ID = env("ASAAS_CUSTOMER_ID")
 ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN")
