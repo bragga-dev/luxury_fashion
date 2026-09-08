@@ -9,6 +9,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import transaction
 
 from luxury_fashion.apps.accounts.selectors.client_selector import get_client_by_user_id
 from luxury_fashion.apps.core.exceptions import (
@@ -76,29 +77,40 @@ def _get_or_create_asaas_customer(user_id: uuid.UUID, cpf_cnpj: str | None = Non
 
 
 def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: PaymentCreateIn) -> PaymentOut:
-    order = get_order_by_id_and_user(order_id=order_id, user_id=user_id)
-    if order is None:
-        raise OrderNotFound()
+    # A cobrança é "reservada" (linha do Order travada + Payment criado
+    # PENDING) dentro da transação, antes de chamar a Asaas — assim, um
+    # duplo clique ou retry de rede concorrente encontra a reserva e cai
+    # em OrderAlreadyPaid em vez de gerar uma segunda cobrança na Asaas.
+    with transaction.atomic():
+        order = (
+            Order.objects.select_for_update()
+            .filter(order_id=order_id, user_id=user_id)
+            .first()
+        )
+        if order is None:
+            raise OrderNotFound()
 
-    if order.order_status != Order.StatusOrder.PENDING:
-        raise OrderNotPayable()
+        if order.order_status != Order.StatusOrder.PENDING:
+            raise OrderNotPayable()
 
-    if get_open_payment_for_order(order.order_id) is not None:
-        raise OrderAlreadyPaid()
+        if get_open_payment_for_order(order.order_id) is not None:
+            raise OrderAlreadyPaid()
 
+        due_date = date.today() + timedelta(days=settings.ASAAS_PAYMENT_DUE_DAYS)
+
+        payment = create_payment(
+            order_id=order,
+            billing_type=data.billing_type.value,
+            value=order.total_geral,
+            due_date=due_date,
+            description=f"Pedido {order.code}",
+            external_reference=str(order.order_id),
+        )
+
+    # A partir daqui o lock já foi liberado — o resto é I/O de rede com a
+    # Asaas e não deve segurar a linha do Order.
     cpf_cnpj = data.credit_card_holder_info.cpf_cnpj if data.credit_card_holder_info else None
     customer_id = _get_or_create_asaas_customer(user_id, cpf_cnpj=cpf_cnpj)
-
-    due_date = date.today() + timedelta(days=settings.ASAAS_PAYMENT_DUE_DAYS)
-
-    payment = create_payment(
-        order_id=order,
-        billing_type=data.billing_type.value,
-        value=order.total_geral,
-        due_date=due_date,
-        description=f"Pedido {order.code}",
-        external_reference=str(order.order_id),
-    )
 
     asaas = AsaasClient()
     credit_card = data.credit_card.model_dump(by_alias=False) if data.credit_card else None
@@ -119,6 +131,10 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
     if data.billing_type.value == Payment.PaymentMode.PIX:
         pix_data = asaas.get_pix_qrcode(payment.asaas_payment_id)
         payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
+
+    from luxury_fashion.apps.payments.tasks.send_payment_request import send_payment_request
+    send_payment_request.delay(user_id, payment.payment_id)
+
     return PaymentOut.from_orm(payment)
 
 
@@ -170,5 +186,5 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
     order = payment.order_id
     if status in _PAID_STATUSES and order.order_status != Order.StatusOrder.COMPLETED:
         completed_order(order=order)
-    elif status in _REFUND_STATUSES:
+    elif status in _REFUND_STATUSES and order.order_status != Order.StatusOrder.REFUNDED:
         refunded_order(order=order)

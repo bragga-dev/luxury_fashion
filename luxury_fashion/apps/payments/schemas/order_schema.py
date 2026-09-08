@@ -37,7 +37,7 @@ class OrderOut(Schema):
     order_id: uuid.UUID
     code: str
     order_status: StatusOrderEnum
-    order_status_label: StatusOrderEnum
+    order_status_label: str
     items: List[OrderItemOut] = Field(default_factory=list)
     subtotal: Decimal
     order_shipping_total: Decimal

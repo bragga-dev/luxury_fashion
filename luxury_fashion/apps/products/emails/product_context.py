@@ -56,7 +56,7 @@ def resolve_client_display_name(user: User) -> str:
     Usa o e-mail como fallback quando o perfil de Client ainda não existe
     (ex.: e-mail disparado antes do onboarding do perfil ser concluído).
     """
-    client = get_client_by_user_id(user_id=user.id)
+    client = get_client_by_user_id(user_id=user.user_id)
     if client is None:
         return user.email
     return get_client_full_name_display(client)
@@ -90,7 +90,8 @@ def build_product_block(variant: ProductVariant) -> dict:
 def build_order_datetime_block(order: Order) -> dict:
     """Campos de data/horário do pedido, já formatados em pt-BR, e status atual."""
     return {
-        "order_created_at": format_datetime_br(order.canceled_at),
-        "order_completed_at": format_datetime_br(order.completed_at),
+        "order_created_at": format_datetime_br(order.created_at),
+        "order_canceled_at": format_datetime_br(order.canceled_at) if order.canceled_at else None,
+        "order_completed_at": format_datetime_br(order.completed_at) if order.completed_at else None,
         "order_status": order.get_order_status_display(),
     }

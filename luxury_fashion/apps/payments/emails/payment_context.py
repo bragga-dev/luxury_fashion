@@ -30,7 +30,7 @@ def store_url() -> str:
 def build_payment_block(payment: Payment, customer: AsaasCustomer) -> dict:
     """Campos praticados no momento do pagamento."""
     return {
-        "code_payment": payment.asaas_payment_id or payment.id,
+        "code_payment": payment.asaas_payment_id or payment.payment_id,
         "payment_description": payment.description,
         "payment_value": payment.value,
         "payment_order": payment.order_id,
