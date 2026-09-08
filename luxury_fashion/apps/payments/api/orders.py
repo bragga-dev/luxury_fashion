@@ -11,7 +11,7 @@ from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.exceptions import EmptyCart, OrderNotFound, OrderNotPayable, UserNotFound
 from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
-from luxury_fashion.apps.core.permissions.auth_classes import ClientOnlyAuth
+from luxury_fashion.apps.core.permissions.auth_classes import ClientOnlyAuth, ClientCompleteProfileAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
 from luxury_fashion.apps.payments.schemas.order_schema import OrderCancelIn, OrderCreateIn, OrderOut
 from luxury_fashion.apps.payments.services.order_service import (
@@ -27,7 +27,7 @@ router = Router()
 @router.post(
     "",
     response={201: OrderOut, 400: MessageOut, 403: MessageOut, 404: MessageOut, 409: MessageOut},
-    auth=ClientOnlyAuth(),
+    auth=ClientCompleteProfileAuth(),
     summary="Faz o checkout do carrinho e cria um pedido",
 )
 @ratelimit(key="user", rate="10/m", block=True)
