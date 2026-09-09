@@ -4,7 +4,7 @@ autenticado.
 """
 import uuid
 
-from ninja import Router
+from ninja import Router, Status
 from django_ratelimit.decorators import ratelimit
 
 from luxury_fashion.apps.accounts.models.user_model import User
@@ -34,15 +34,15 @@ router = Router()
 def create_order_router(request, payload: OrderCreateIn):
     try:
         user: User = request.auth
-        return 201, create_order_from_cart(user.user_id, payload)
+        return Status(201, create_order_from_cart(user.user_id, payload))
     except (UserNotFound, OrderNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except PermissionDenied as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
     except EmptyCart as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
     except InsufficientStock as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
 
 
 @router.get(
@@ -54,7 +54,7 @@ def create_order_router(request, payload: OrderCreateIn):
 @ratelimit(key="user", rate="60/m", block=True)
 def list_orders_router(request):
     user: User = request.auth
-    return 200, list_orders_for_client(user.user_id)
+    return Status(200, list_orders_for_client(user.user_id))
 
 
 @router.get(
@@ -67,9 +67,9 @@ def list_orders_router(request):
 def get_order_router(request, order_id: uuid.UUID):
     try:
         user: User = request.auth
-        return 200, get_order_for_client(user.user_id, order_id)
+        return Status(200, get_order_for_client(user.user_id, order_id))
     except OrderNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -83,8 +83,8 @@ def cancel_order_router(request, order_id: uuid.UUID, payload: OrderCancelIn = N
     try:
         user: User = request.auth
         reason = payload.reason if payload else None
-        return 200, cancel_order_by_client(user.user_id, order_id, reason=reason)
+        return Status(200, cancel_order_by_client(user.user_id, order_id, reason=reason))
     except OrderNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except OrderNotPayable as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})

@@ -14,9 +14,14 @@ import pytest
 from luxury_fashion.apps.accounts.models.client_model import Client
 from luxury_fashion.apps.accounts.models.addresses_client_model import AddressesClient
 from luxury_fashion.apps.accounts.models.user_model import User
+from luxury_fashion.apps.cart.models.cart_item_model import CartItem
+from luxury_fashion.apps.cart.models.cart_model import Cart
 from luxury_fashion.apps.payments.models.asaas_customer_model import AsaasCustomer
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
+from luxury_fashion.apps.products.models.product_category_model import ProductCategory
+from luxury_fashion.apps.products.models.product_model import Product
+from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
 
 
 @pytest.fixture(autouse=True)
@@ -85,6 +90,52 @@ def order(user, address) -> Order:
         order_shipping_total=Decimal("20.00"),
         total_geral=Decimal("219.90"),
     )
+
+
+@pytest.fixture
+def product_category(db) -> ProductCategory:
+    return ProductCategory.objects.create(category_name="Vestidos")
+
+
+@pytest.fixture
+def product(product_category) -> Product:
+    return Product.objects.create(product_category_id=product_category, product_name="Vestido Longo")
+
+
+@pytest.fixture
+def variant(product) -> ProductVariant:
+    return ProductVariant.objects.create(
+        product_id=product,
+        size=Product.ProductSize.M,
+        color=Product.ProductColor.BLACK,
+        gender=Product.ProductGender.FEMININO,
+        price=Decimal("199.90"),
+        stock=5,
+    )
+
+
+@pytest.fixture
+def other_variant(product) -> ProductVariant:
+    return ProductVariant.objects.create(
+        product_id=product,
+        size=Product.ProductSize.G,
+        color=Product.ProductColor.RED,
+        gender=Product.ProductGender.FEMININO,
+        price=Decimal("249.90"),
+        stock=3,
+    )
+
+
+@pytest.fixture
+def cart(user) -> Cart:
+    return Cart.objects.create(user_id=user)
+
+
+@pytest.fixture
+def cart_item(cart, variant) -> CartItem:
+    item = CartItem.objects.create(cart_id=cart, variant_id=variant, quantity_item=2)
+    cart.update_totals()
+    return item
 
 
 @pytest.fixture
