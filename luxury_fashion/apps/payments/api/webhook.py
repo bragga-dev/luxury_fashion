@@ -6,8 +6,7 @@ configurado no painel da Asaas e comparado com ASAAS_WEBHOOK_TOKEN.
 """
 import logging
 
-from ninja import Router
-from django.conf import settings
+from ninja import Router, Status
 from luxury_fashion.apps.core.exceptions import InvalidWebhookToken
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
 from luxury_fashion.apps.payments.schemas.payment_schema import AsaasWebhookIn
@@ -38,9 +37,8 @@ def asaas_webhook_router(request, payload: AsaasWebhookIn):
 
     except InvalidWebhookToken as e:
         logger.warning("Webhook Asaas recusado: token inválido.")
-        return 401, {"detail": str(e)}
+        return Status(401, {"detail": str(e)})
     except Exception:
         logger.exception("Erro ao processar webhook da Asaas: event=%s", payload.event)
-        return 500, {"detail": "Erro interno ao processar webhook."}
-
-    return 200, {"detail": "ok"}
+        return Status(500, {"detail": "Erro interno ao processar webhook."})
+    return Status(200, {"detail": "ok"})

@@ -4,6 +4,7 @@ Asaas e a aplicação do webhook. Fala com o AsaasClient; repositories só
 persistem o que o service já decidiu.
 """
 import hmac
+import logging
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
@@ -11,8 +12,11 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 
+logger = logging.getLogger(__name__)
+
 from luxury_fashion.apps.accounts.selectors.client_selector import get_client_by_user_id
 from luxury_fashion.apps.core.exceptions import (
+    AsaasAPIError,
     CpfOrCnpjRequired,
     InvalidWebhookToken,
     OrderAlreadyPaid,
@@ -116,24 +120,45 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
     credit_card = data.credit_card.model_dump(by_alias=False) if data.credit_card else None
     credit_card_holder_info = (data.credit_card_holder_info.model_dump(by_alias=False) if data.credit_card_holder_info else None)
 
-    response = asaas.create_payment(
-        customer_id=customer_id,
-        billing_type=data.billing_type.value,
-        value=order.total_geral,
-        due_date=due_date.isoformat(),
-        description=payment.description,
-        external_reference=payment.external_reference,
-        credit_card=credit_card,
-        credit_card_holder_info=credit_card_holder_info,
-    )
+    # Se a chamada de criação falhar na Asaas, o Payment local (PENDING,
+    # sem asaas_payment_id) precisa ser cancelado aqui — senão ele fica
+    # "preso" e get_open_payment_for_order passa a barrar QUALQUER nova
+    # tentativa de pagamento pra esse pedido pra sempre (OrderAlreadyPaid
+    # num pedido que, na prática, nunca chegou a ter cobrança nenhuma).
+    try:
+        response = asaas.create_payment(
+            customer_id=customer_id,
+            billing_type=data.billing_type.value,
+            value=order.total_geral,
+            due_date=due_date.isoformat(),
+            description=payment.description,
+            external_reference=payment.external_reference,
+            credit_card=credit_card,
+            credit_card_holder_info=credit_card_holder_info,
+        )
+    except AsaasAPIError:
+        update_payment(payment, status=Payment.PaymentStatus.CANCELLED)
+        raise
+
     payment = update_payment(payment, **map_payment_creation_response(response))
 
     if data.billing_type.value == Payment.PaymentMode.PIX:
-        pix_data = asaas.get_pix_qrcode(payment.asaas_payment_id)
-        payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
+        # Nesse ponto a cobrança já existe de verdade na Asaas — se só a
+        # consulta do QR Code falhar, não faz sentido derrubar a criação
+        # inteira (o cliente ainda pode pagar pela invoice_url). Loga e
+        # segue; os campos de Pix ficam vazios até uma nova sincronização.
+        try:
+            pix_data = asaas.get_pix_qrcode(payment.asaas_payment_id)
+            payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
+        except AsaasAPIError:
+            logger.exception(
+                "Falha ao buscar QR Code Pix da cobrança %s (pagamento %s) — "
+                "cobrança já criada na Asaas, seguindo sem o QR Code.",
+                payment.asaas_payment_id, payment.payment_id,
+            )
 
     from luxury_fashion.apps.payments.tasks.send_payment_request import send_payment_request
-    
+
     transaction.on_commit(lambda: send_payment_request.delay(user_id, payment.payment_id))
 
     return PaymentOut.from_orm(payment)

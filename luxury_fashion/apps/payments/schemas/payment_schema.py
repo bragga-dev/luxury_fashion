@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Optional
 
 from ninja import Schema, Field
+from pydantic import model_validator
 
 from luxury_fashion.apps.payments.models.payment_model import Payment
 
@@ -61,6 +62,16 @@ class PaymentCreateIn(Schema):
     billing_type: PaymentBillingTypeEnum
     credit_card: Optional[CreditCardIn] = None
     credit_card_holder_info: Optional[CreditCardHolderInfoIn] = None
+
+    @model_validator(mode="after")
+    def _require_credit_card_fields(self) -> "PaymentCreateIn":
+        if self.billing_type == PaymentBillingTypeEnum.CREDIT_CARD:
+            if self.credit_card is None or self.credit_card_holder_info is None:
+                raise ValueError(
+                    "credit_card e credit_card_holder_info são obrigatórios "
+                    "quando billing_type é CREDIT_CARD."
+                )
+        return self
 
 
 class RefundIn(Schema):
