@@ -102,6 +102,17 @@ class ReviewsCreateIn(Schema):
         return _validate_comment(v)
 
 
+        
+
+class ReviewsUpdateIn(Schema):
+    reviews: ReviewsEnum
+    comment: Optional[str] = None
+
+    @field_validator("comment")
+    @classmethod
+    def validate_comment_create(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_comment(v)
+
 
 
 class ReviewsFilter(Schema):

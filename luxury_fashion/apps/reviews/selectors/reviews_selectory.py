@@ -1,10 +1,9 @@
-
 from typing import Optional
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
 
-from luxury_fashion.apps.reviews.models.reviews_model  import Reviews
+from luxury_fashion.apps.reviews.models.reviews_model import Reviews
 
 
 DEFAULT_RELATED = ("user_id", "order_item_id", "order_item_id__order_id")
@@ -20,39 +19,38 @@ def get_reviews_by_id(reviews_id: UUID) -> Optional[Reviews]:
 
 
 def get_reviews_by_order_item(order_item_id: UUID) -> Optional[Reviews]:
-    """Retorna a avaliação vinculada a um produto"""
+    """Retorna a avaliação vinculada a um item do pedido."""
     return Reviews.objects.select_related(*DEFAULT_RELATED).filter(order_item_id=order_item_id).first()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Listagem por Produto
+# Listagem por Item do Pedido
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_reviews_by_product(order_item_id: UUID, authorized_only: bool = True) -> QuerySet[Reviews]:
-    """Retorna as avaliações de um produto específico."""
+    """Retorna as avaliações de um item de pedido específico."""
     qs = Reviews.objects.select_related(*DEFAULT_RELATED).filter(order_item_id=order_item_id)
     if authorized_only:
         qs = qs.filter(is_authorized=True)
-    return qs.order_by("-order_item_id", "-created_at")
-
+    return qs.order_by("-created_at")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Listagem por Cliente
+# Listagem por Usuário
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_reviews_by_user(user_id: UUID) -> QuerySet[Reviews]:
     """Retorna todas as avaliações feitas por um usuário específico."""
-    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(user_id=user_id).order_by("-reviews", "-created_at")
+    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(user_id=user_id).order_by("-created_at")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Listagem por Nota
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def get_reviews_by_stars(reviews: int, authorized_only: bool = True) -> QuerySet[Reviews]:
+def get_reviews_by_stars(rating: int, authorized_only: bool = True) -> QuerySet[Reviews]:
     """Retorna as avaliações com uma nota específica (1 a 5 estrelas)."""
-    qs = Reviews.objects.select_related(*DEFAULT_RELATED).filter(reviews=reviews)
+    qs = Reviews.objects.select_related(*DEFAULT_RELATED).filter(reviews=rating)
     if authorized_only:
         qs = qs.filter(is_authorized=True)
     return qs.order_by("-created_at")
@@ -64,12 +62,12 @@ def get_reviews_by_stars(reviews: int, authorized_only: bool = True) -> QuerySet
 
 def get_pending_authorization_reviews() -> QuerySet[Reviews]:
     """Retorna as avaliações ainda não autorizadas (aguardando moderação)."""
-    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(is_authorized=False).order_by("-reviews", "-created_at")
+    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(is_authorized=False).order_by("-created_at")
 
 
 def get_authorized_reviews() -> QuerySet[Reviews]:
     """Retorna apenas as avaliações já autorizadas (públicas)."""
-    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(is_authorized=True).order_by("-reviews", "-created_at")
+    return Reviews.objects.select_related(*DEFAULT_RELATED).filter(is_authorized=True).order_by("-created_at")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -81,19 +79,20 @@ def get_reviews_with_comment(authorized_only: bool = True) -> QuerySet[Reviews]:
     qs = Reviews.objects.select_related(*DEFAULT_RELATED).exclude(comment__isnull=True).exclude(comment="")
     if authorized_only:
         qs = qs.filter(is_authorized=True)
-    return qs.order_by("-reviews", "-created_at")
+    return qs.order_by("-created_at")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Filtros Avançados
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def filter_average_reviews(
-    service_id: Optional[UUID] = None,
-    employee_id: Optional[UUID] = None,
-    client_id: Optional[UUID] = None,
+def filter_reviews(
+    user_id: Optional[UUID] = None,
+    order_id: Optional[UUID] = None,
+    order_item_id: Optional[UUID] = None,
     rating: Optional[int] = None,
     is_authorized: Optional[bool] = None,
+    has_comment: Optional[bool] = None,
 ) -> QuerySet[Reviews]:
     """
     Listagem administrativa de avaliações com filtros combináveis.
@@ -101,18 +100,24 @@ def filter_average_reviews(
     """
     q = Q()
 
-    if service_id:
-        q &= Q(service_id=service_id)
-    if employee_id:
-        q &= Q(employee_id=employee_id)
-    if client_id:
-        q &= Q(client_id=client_id)
+    if user_id:
+        q &= Q(user_id=user_id)
+    if order_id:
+        q &= Q(order_item_id__order_id=order_id)
+    if order_item_id:
+        q &= Q(order_item_id=order_item_id)
     if rating is not None:
-        q &= Q(rating=rating)
+        q &= Q(reviews=rating)
     if is_authorized is not None:
         q &= Q(is_authorized=is_authorized)
+    if has_comment is not None:
+        if has_comment:
+            q &= Q(comment__isnull=False) & ~Q(comment="")
+        else:
+            q &= Q(Q(comment__isnull=True) | Q(comment=""))
 
-    qs = Reviews.objects.select_related(*DEFAULT_RELATED).filter(q) if q else Reviews.objects.select_related(*DEFAULT_RELATED).all()
+    qs = Reviews.objects.select_related(*DEFAULT_RELATED)
+    qs = qs.filter(q) if q else qs.all()
     return qs.order_by("-created_at")
 
 
@@ -120,13 +125,16 @@ def filter_average_reviews(
 # Utilitários
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def validate_average_reviews_exists(rating_id: UUID) -> bool:
+def validate_reviews_exists(reviews_id: UUID) -> bool:
     """Verifica se uma avaliação existe."""
-    return Reviews.objects.filter(id=rating_id).exists()
+    return Reviews.objects.filter(reviews_id=reviews_id).exists()
 
 
-def validate_product_already_rated(scheduling_id: UUID) -> bool:
-    """Verifica se um produto já possui avaliação ."""
-    return Reviews.objects.filter(scheduling_id=scheduling_id).exists()
+def validate_order_item_already_rated(order_item_id: UUID) -> bool:
+    """Verifica se um item do pedido já possui avaliação."""
+    return Reviews.objects.filter(order_item_id=order_item_id).exists()
 
 
+def validate_user_already_rated_order_item(user_id: UUID, order_item_id: UUID) -> bool:
+    """Verifica se um usuário já avaliou um item específico do pedido."""
+    return Reviews.objects.filter(user_id=user_id, order_item_id=order_item_id).exists()
