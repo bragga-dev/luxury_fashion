@@ -133,7 +133,8 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
         payment = update_payment(payment, **map_pix_qrcode_response(pix_data))
 
     from luxury_fashion.apps.payments.tasks.send_payment_request import send_payment_request
-    send_payment_request.delay(user_id, payment.payment_id)
+    
+    transaction.on_commit(lambda: send_payment_request.delay(user_id, payment.payment_id))
 
     return PaymentOut.from_orm(payment)
 

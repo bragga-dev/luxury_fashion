@@ -16,5 +16,6 @@ def create_payment(**fields) -> Payment:
 def update_payment(payment: Payment, **fields) -> Payment:
     for field, value in fields.items():
         setattr(payment, field, value)
+    payment.full_clean()
     payment.save(update_fields=[*fields.keys(), "updated_at"])
     return payment
