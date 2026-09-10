@@ -429,7 +429,7 @@ def update_profile_client_router(request, payload: ClientUpdateIn):
 def upload_client_photo_router(request, photo: UploadedFile = File(...)):
     try:
         user: User = request.auth
-        client_updated = upload_client_profile_photo(user=user, photo=photo)
+        client_updated = upload_client_profile_photo(user_id=user.user_id, photo=photo)
         return 200, client_updated
     except UserNotFound as e:
         return 404, {"detail": str(e)}
@@ -442,7 +442,7 @@ def upload_client_photo_router(request, photo: UploadedFile = File(...)):
 def delete_client_photo_router(request):
     try:
         user: User = request.auth
-        client_updated = delete_client_profile_photo(user=user)
+        client_updated = delete_client_profile_photo(user_id=user.user_id)
         return 200, client_updated
     except UserNotFound as e:
         return 404, {"detail": str(e)}

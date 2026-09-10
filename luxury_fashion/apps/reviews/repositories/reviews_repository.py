@@ -24,8 +24,8 @@ REVIEWS_FIELDS = {"comment", "reviews"}
 @transaction.atomic
 def create_reviews(*, user: User, order_item: OrderItem, reviews: int, comment: Optional[str] = None) -> Reviews:
     reviews = Reviews(
-        user=user,
-        order_item=order_item,
+        user_id=user,
+        order_item_id=order_item,
         reviews=reviews,
         comment=comment,
     )
@@ -34,20 +34,24 @@ def create_reviews(*, user: User, order_item: OrderItem, reviews: int, comment: 
 
 
 @transaction.atomic
-def update_reviews(reviews: Reviews, **fields) -> Reviews:
-   
+def update_reviews(instance: Reviews, **fields) -> Reviews:
+    """
+    `instance` (não `reviews`) de propósito: o campo de nota do model se
+    chama `reviews`, então um parâmetro com esse mesmo nome colide com a
+    chave `"reviews"` vinda de `**fields` (`TypeError: multiple values`).
+    """
     unknown = set(fields) - REVIEWS_FIELDS
     if unknown:
         raise ValueError(f"Campos não atualizáveis na Avaliação: {', '.join(sorted(unknown))}")
 
     if not fields:
-        return reviews
+        return instance
 
     for field, value in fields.items():
-        setattr(reviews, field, value)
+        setattr(instance, field, value)
 
-    reviews.save()
-    return reviews
+    instance.save()
+    return instance
 
 
 @transaction.atomic

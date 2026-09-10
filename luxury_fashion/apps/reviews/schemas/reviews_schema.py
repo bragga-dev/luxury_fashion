@@ -1,15 +1,11 @@
-
 from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from ninja import Schema, Fiel
-from __future__ import annotations
-
+from ninja import Schema
 from pydantic import field_validator
-
 
 from luxury_fashion.apps.reviews.models.reviews_model import Reviews
 from luxury_fashion.apps.payments.schemas.order_item_schema import OrderItemOut
@@ -29,7 +25,7 @@ class ReviewsEnum(int, Enum):
 
     @classmethod
     def get_display_name(cls, value: int) -> str:
-        choices_dict = dict(ReviewsEnum.ReviewsChoices.choices)
+        choices_dict = dict(Reviews.ReviewsChoices.choices)
         return choices_dict.get(value, str(value))
 
 
@@ -50,15 +46,15 @@ class ReviewsOut(Schema):
     user: UserOut
     reviews: ReviewsEnum
     reviews_label: str
-    comment: str
+    comment: Optional[str] = None
     created_at: datetime
 
     @classmethod
     def from_orm(cls, reviews: Reviews) -> "ReviewsOut":
         return cls(
             reviews_id=reviews.reviews_id,
-            order_item=OrderItemOut.from_orm(reviews.order_item),
-            user=UserOut.from_orm(reviews.user),
+            order_item=OrderItemOut.from_orm(reviews.order_item_id),
+            user=UserOut.from_orm(reviews.user_id),
             reviews=reviews.reviews,
             reviews_label=reviews.get_reviews_display(),
             comment=reviews.comment,
@@ -71,17 +67,17 @@ class ReviewsPrivateOut(Schema):
     user: UserOut
     reviews: ReviewsEnum
     reviews_label: str
-    comment: str
+    comment: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     is_authorized: bool
 
     @classmethod
-    def from_orm(cls, reviews: Reviews) -> "ReviewsOut":
+    def from_orm(cls, reviews: Reviews) -> "ReviewsPrivateOut":
         return cls(
             reviews_id=reviews.reviews_id,
-            order_item=OrderItemOut.from_orm(reviews.order_item),
-            user=UserOut.from_orm(reviews.user),
+            order_item=OrderItemOut.from_orm(reviews.order_item_id),
+            user=UserOut.from_orm(reviews.user_id),
             reviews=reviews.reviews,
             reviews_label=reviews.get_reviews_display(),
             comment=reviews.comment,
@@ -91,8 +87,12 @@ class ReviewsPrivateOut(Schema):
         )
 
 class ReviewsCreateIn(Schema):
+    """
+    `user_id` NUNCA vem do payload — é resolvido a partir de `request.auth`
+    no service, senão qualquer cliente autenticado poderia criar uma
+    avaliação em nome de outro usuário.
+    """
     order_item_id: UUID
-    user_id: UUID
     reviews: ReviewsEnum
     comment: Optional[str] = None
 
@@ -128,3 +128,9 @@ class ReviewsList(Schema):
 
 class ReviewsPrivateList(Schema):
     items: list[ReviewsPrivateOut]
+
+
+class ProductRatingSummaryOut(Schema):
+    product_id: UUID
+    average_rating: Decimal
+    total_reviews: int

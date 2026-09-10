@@ -15,6 +15,7 @@ from luxury_fashion.apps.payments.api.orders import router as orders_router
 from luxury_fashion.apps.payments.api.payments import router as payments_router
 from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_router
 from luxury_fashion.apps.accounts.api.address import router as address_router
+from luxury_fashion.apps.reviews.api.reviews import router as reviews_router
 
 
 
@@ -54,6 +55,7 @@ api.add_router("/orders/", orders_router, tags=["Orders"])
 api.add_router("/", payments_router, tags=["Payments"])
 api.add_router("/webhooks/asaas/", asaas_webhook_router, tags=["Webhooks"])
 api.add_router("/address/", address_router, tags=["Address"])
+api.add_router("/reviews/", reviews_router, tags=["Reviews"])
 
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────

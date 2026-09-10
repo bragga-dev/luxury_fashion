@@ -16,7 +16,7 @@ class Reviews(models.Model):
 
     reviews_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order_item_id = models.OneToOneField("payments.OrderItem", on_delete=models.CASCADE, related_name="reviews")
-    user_id = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name="reviews")
+    user_id = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="reviews")
     reviews = models.PositiveSmallIntegerField(_("Avaliação"), choices=ReviewsChoices.choices, help_text=_("Nota de 1 a 5 estrelas"))
     comment = models.TextField(_("Comentário"), blank=True, null=True, max_length=500, help_text=_("Deixe um comentário sobre sua experiência"))
     created_at = models.DateTimeField(_("Criado em"), auto_now_add=True)
@@ -43,10 +43,11 @@ class Reviews(models.Model):
         return f"{self.user_id} → ({self.order_item_id}): {self.reviews}★"
 
     def clean(self):
-        if self.order_id:
-            if self.order_item_id.order_id.order_status != self.order_item_id.order_id.StatusOrder.COMPLETED:
+        if self.order_item_id_id:
+            order = self.order_item_id.order_id
+            if order.order_status != order.StatusOrder.COMPLETED:
                 raise ValidationError({"order_item_id": _("Só é possível avaliar pedidos concluídos.")})
-            if self.user_id and self.user_id != self.order_item_id.order_id.user_id:
+            if self.user_id_id and self.user_id_id != order.user_id_id:
                 raise ValidationError({"user_id": _("Usuário não corresponde ao pedido.")})
 
     def save(self, *args, **kwargs):
