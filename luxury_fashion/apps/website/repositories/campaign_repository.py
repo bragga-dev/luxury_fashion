@@ -1,6 +1,7 @@
 """
 Campaign Repository — persistência de Campaign.
 """
+
 from luxury_fashion.apps.website.models.campaign_model import Campaign
 
 
@@ -24,14 +25,12 @@ def delete_campaign(campaign: Campaign) -> None:
 
 
 def activate_campaign(campaign: Campaign) -> Campaign:
-    if not campaign.is_active:
-        campaign.is_active = True
-        campaign.save(update_fields=["is_active", "updated_at"])
+    campaign.is_active = True
+    campaign.save(update_fields=["is_active", "updated_at"])
     return campaign
 
 
 def deactivate_campaign(campaign: Campaign) -> Campaign:
-    if campaign.is_active:
-        campaign.is_active = False
-        campaign.save(update_fields=["is_active", "updated_at"])
+    campaign.is_active = False
+    campaign.save(update_fields=["is_active", "updated_at"])
     return campaign

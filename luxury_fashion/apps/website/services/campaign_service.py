@@ -3,12 +3,14 @@ Campaign Services — orquestra regras de negócio de campanhas
 promocionais (repositories + selectors), devolvendo sempre schemas
 prontos para a camada de API.
 """
+
 import uuid
 
 from luxury_fashion.apps.core.exceptions.campaign_exception import (
     CampaignNotFound,
     CampaignTitleAlreadyExists,
 )
+
 from luxury_fashion.apps.website.repositories.campaign_repository import (
     activate_campaign,
     create_campaign,
@@ -16,11 +18,13 @@ from luxury_fashion.apps.website.repositories.campaign_repository import (
     delete_campaign,
     update_campaign,
 )
+
 from luxury_fashion.apps.website.schemas.campaign_schema import (
     CampaignCreateIn,
     CampaignOut,
     CampaignUpdateIn,
 )
+
 from luxury_fashion.apps.website.selectors.campaign_selector import (
     campaign_title_exists,
     get_all_campaigns,
@@ -67,8 +71,14 @@ def update_campaign_for_admin(campaign_id: uuid.UUID, data: CampaignUpdateIn) ->
     campaign = _get_campaign_or_raise(campaign_id)
 
     fields = data.dict(exclude_unset=True)
-    if "title" in fields and fields["title"] is not None and campaign_title_exists(
-        fields["title"], exclude_id=campaign_id
+
+    if (
+        "title" in fields
+        and fields["title"] is not None
+        and campaign_title_exists(
+            fields["title"],
+            exclude_id=campaign_id,
+        )
     ):
         raise CampaignTitleAlreadyExists()
 
@@ -83,11 +93,13 @@ def delete_campaign_for_admin(campaign_id: uuid.UUID) -> None:
 
 def activate_campaign_for_admin(campaign_id: uuid.UUID) -> CampaignOut:
     campaign = _get_campaign_or_raise(campaign_id)
-    campaign = activate_campaign(campaign)
+    if not campaign.is_active:
+        campaign = activate_campaign(campaign)
     return CampaignOut.from_orm(campaign)
 
 
 def deactivate_campaign_for_admin(campaign_id: uuid.UUID) -> CampaignOut:
     campaign = _get_campaign_or_raise(campaign_id)
-    campaign = deactivate_campaign(campaign)
+    if campaign.is_active:
+        campaign = deactivate_campaign(campaign)
     return CampaignOut.from_orm(campaign)
