@@ -1,6 +1,7 @@
 """
 Contact Repository — persistência de Contact.
 """
+
 from luxury_fashion.apps.website.models.contact_model import Contact
 
 
@@ -13,8 +14,7 @@ def create_contact(**fields) -> Contact:
 
 def update_contact(contact: Contact, **fields) -> Contact:
     for attr, value in fields.items():
-        if value is not None:
-            setattr(contact, attr, value)
+        setattr(contact, attr, value)
     contact.full_clean()
     contact.save()
     return contact
