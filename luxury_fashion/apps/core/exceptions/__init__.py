@@ -31,6 +31,7 @@ from luxury_fashion.apps.core.exceptions.products_exception import (
     ShippingNotFound,
     ShippingAlreadyExists,
 )
+from luxury_fashion.apps.core.exceptions.campaign_exception import CampaignNotFound, CampaignTitleAlreadyExists, CampaignImageNotFound
 
 __all__ = [
     
@@ -72,4 +73,9 @@ __all__ = [
     "PaymentNotRefundable",
     "InvalidWebhookToken",
     "InvalidOrderStatusTransition",
+
+    "CampaignNotFound",
+    "CampaignTitleAlreadyExists",
+    "CampaignImageNotFound",
+
 ]

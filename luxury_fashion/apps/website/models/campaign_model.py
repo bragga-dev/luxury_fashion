@@ -1,18 +1,8 @@
-from django.db import models
-from django.utils.translation import gettext_lazy as _
-import uuid 
-from django.core.validators import MinValueValidator
-from luxury_fashion.apps.products.models.product_model import Product
-
-
-
-
-
-
-
 import uuid
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
 
 class Campaign(models.Model):
     campaign_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

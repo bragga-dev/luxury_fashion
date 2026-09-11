@@ -16,7 +16,8 @@ from luxury_fashion.apps.payments.api.payments import router as payments_router
 from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_router
 from luxury_fashion.apps.accounts.api.address import router as address_router
 from luxury_fashion.apps.reviews.api.reviews import router as reviews_router
-
+from luxury_fashion.apps.website.api.campaign import router as campaign_router
+from luxury_fashion.apps.website.api.contact import router as contact_router
 
 
 from django_ratelimit.exceptions import Ratelimited
@@ -56,7 +57,8 @@ api.add_router("/", payments_router, tags=["Payments"])
 api.add_router("/webhooks/asaas/", asaas_webhook_router, tags=["Webhooks"])
 api.add_router("/address/", address_router, tags=["Address"])
 api.add_router("/reviews/", reviews_router, tags=["Reviews"])
-
+api.add_router("/campaigns/", campaign_router, tags=["Campaigns"])
+api.add_router("/contact/", contact_router, tags=["Contact"])
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────
 

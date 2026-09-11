@@ -72,6 +72,7 @@ LOCAL_APPS = [
     "luxury_fashion.apps.payments",
     "luxury_fashion.apps.cart",
     "luxury_fashion.apps.reviews",
+    "luxury_fashion.apps.website",
    
 ]
 
