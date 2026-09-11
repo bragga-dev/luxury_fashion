@@ -103,7 +103,7 @@ def get_active_users_by_role(role: str) -> QuerySet[User]:
 def get_user_with_related(user_id: uuid.UUID) -> Optional[User]:
     return (
         User.objects
-        .select_related("client_profile")
+        .select_related("client_profile", "admin_profile")
         .filter(pk=user_id)
         .first()
     )
@@ -121,7 +121,7 @@ def filter_users_admin(
     select_related para evitar N+1 ao acessar client_profile
     na serialização.
     """
-    qs = User.objects.select_related("client_profile")
+    qs = User.objects.select_related("client_profile", "admin_profile")
 
     if search:
         search = search.strip()
@@ -129,7 +129,7 @@ def filter_users_admin(
             Q(email__icontains=search)
             | Q(client_profile__first_name__icontains=search)
             | Q(client_profile__last_name__icontains=search)
-           
+            | Q(admin_profile__full_name__icontains=search)
         )
 
     if role:

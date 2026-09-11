@@ -58,7 +58,7 @@ from luxury_fashion.apps.accounts.schemas.user_schema import (
     SessionOut,
     AccessTokenOut,
 )
-
+from luxury_fashion.apps.accounts.schemas.admin_schema import AdminProfileOut, AdminProfileUpdateIn
 from luxury_fashion.apps.accounts.schemas.me_schema import  MeOut
 
 
@@ -95,7 +95,11 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
 
 from luxury_fashion.apps.accounts.schemas.user_schema import UserOut
 from luxury_fashion.apps.accounts.models.user_model import User
-
+from luxury_fashion.apps.accounts.services.admin_service import (
+    update_admin_profile,
+    upload_admin_profile_photo,
+    delete_admin_profile_photo,
+)
 
 router = Router()
 
@@ -444,5 +448,43 @@ def delete_client_photo_router(request):
         user: User = request.auth
         client_updated = delete_client_profile_photo(user_id=user.user_id)
         return 200, client_updated
+    except UserNotFound as e:
+        return 404, {"detail": str(e)}
+
+# ── Admin: perfil (nome completo + foto) ────────────────────────────────────
+
+@router.patch("/update-admin-profile", response={200: AdminProfileOut, 404: MessageOut, 400: MessageOut}, auth=AdminOnlyAuth(), summary="Atualiza o perfil (nome completo) do Admin logado.")
+@ratelimit(key="ip", rate="20/h", block=True)
+def update_admin_profile_router(request, payload: AdminProfileUpdateIn):
+    try:
+        user: User = request.auth
+        admin_updated = update_admin_profile(user_id=user.user_id, payload=payload)
+        return 200, admin_updated
+    except UserNotFound as e:
+        return 404, {"detail": str(e)}
+    except DjangoValidationError as e:
+        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+
+
+@router.post("/upload-admin-photo", response={200: AdminProfileOut, 400: MessageOut, 404: MessageOut}, auth=AdminOnlyAuth(), summary="Upload da foto do Admin logado.")
+@ratelimit(key="user", rate="10/h", block=True)
+def upload_admin_photo_router(request, photo: UploadedFile = File(...)):
+    try:
+        user: User = request.auth
+        admin_updated = upload_admin_profile_photo(user_id=user.user_id, photo=photo)
+        return 200, admin_updated
+    except UserNotFound as e:
+        return 404, {"detail": str(e)}
+    except InvalidImageFile as e:
+        return 400, {"detail": str(e)}
+
+
+@router.delete("/delete-admin-photo", response={200: AdminProfileOut, 404: MessageOut}, auth=AdminOnlyAuth(), summary="Remove a foto do Admin logado (volta para a foto padrão).")
+@ratelimit(key="user", rate="10/h", block=True)
+def delete_admin_photo_router(request):
+    try:
+        user: User = request.auth
+        admin_updated = delete_admin_profile_photo(user_id=user.user_id)
+        return 200, admin_updated
     except UserNotFound as e:
         return 404, {"detail": str(e)}

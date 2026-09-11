@@ -161,11 +161,14 @@ class UserAdminOut(Schema):
 
     @classmethod
     def from_orm(cls, user: User) -> "UserAdminOut":
-        profile = getattr(user, "client_profile", None) 
+        profile = getattr(user, "client_profile", None) or getattr(user, "admin_profile", None)
         display_name = None
         photo_url = None
         if profile is not None:
-            display_name = " ".join(filter(None, [profile.first_name, profile.last_name])).strip() or None
+            if hasattr(profile, "full_name"):
+                display_name = profile.full_name or None
+            else:
+                display_name = " ".join(filter(None, [profile.first_name, profile.last_name])).strip() or None
             photo_url = profile.photo_url
 
         return cls(
