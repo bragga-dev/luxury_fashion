@@ -1,6 +1,6 @@
 """
-Review endpoints — avaliação de itens de pedido pelo cliente, leitura
-pública por item/produto, e moderação pelo admin.
+Review endpoints — avaliação de itens de pedido (`OrderItem`) pelo cliente
+que comprou, leitura pública por produto/item, e moderação por admin.
 """
 import uuid
 
@@ -14,11 +14,7 @@ from luxury_fashion.apps.core.exceptions.service_exception import (
     AverageRatingNotFound,
     OrderItemNotReviewable,
 )
-from luxury_fashion.apps.core.permissions.auth_classes import (
-    AdminOnlyAuth,
-    ClientCompleteProfileAuth,
-    ClientOnlyAuth,
-)
+from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth, ClientOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
 from luxury_fashion.apps.reviews.schemas.reviews_schema import (
     ProductRatingSummaryOut,
@@ -47,25 +43,23 @@ router = Router()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Cliente
+# Cliente — avalia itens dos próprios pedidos concluídos
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.post(
     "",
-    response={201: ReviewsPrivateOut, 400: MessageOut, 404: MessageOut, 409: MessageOut},
-    auth=ClientCompleteProfileAuth(),
-    summary="Cliente avalia um item do próprio pedido concluído",
+    response={201: ReviewsPrivateOut, 404: MessageOut, 409: MessageOut},
+    auth=ClientOnlyAuth(),
+    summary="Cria uma avaliação para um item de pedido concluído do próprio cliente",
 )
-@ratelimit(key="user", rate="10/m", block=True)
+@ratelimit(key="user", rate="20/m", block=True)
 def create_review_router(request, payload: ReviewsCreateIn):
     try:
         user: User = request.auth
         return Status(201, create_review_for_client(user.user_id, payload))
     except OrderNotFound as e:
         return Status(404, {"detail": str(e)})
-    except OrderItemNotReviewable as e:
-        return Status(400, {"detail": str(e)})
-    except AverageRatingAlreadyExists as e:
+    except (OrderItemNotReviewable, AverageRatingAlreadyExists) as e:
         return Status(409, {"detail": str(e)})
 
 
@@ -73,7 +67,7 @@ def create_review_router(request, payload: ReviewsCreateIn):
     "/me",
     response={200: list[ReviewsPrivateOut]},
     auth=ClientOnlyAuth(),
-    summary="Lista as avaliações do cliente autenticado",
+    summary="Lista as avaliações do cliente autenticado (autorizadas ou não)",
 )
 @ratelimit(key="user", rate="60/m", block=True)
 def list_my_reviews_router(request):
@@ -85,10 +79,10 @@ def list_my_reviews_router(request):
     "/me/{reviews_id}",
     response={200: ReviewsPrivateOut, 404: MessageOut},
     auth=ClientOnlyAuth(),
-    summary="Detalha uma avaliação do cliente autenticado",
+    summary="Detalha uma avaliação do próprio cliente",
 )
 @ratelimit(key="user", rate="60/m", block=True)
-def get_own_review_router(request, reviews_id: uuid.UUID):
+def get_my_review_router(request, reviews_id: uuid.UUID):
     try:
         user: User = request.auth
         return Status(200, get_own_review_detail(user.user_id, reviews_id))
@@ -100,10 +94,10 @@ def get_own_review_router(request, reviews_id: uuid.UUID):
     "/me/{reviews_id}",
     response={200: ReviewsPrivateOut, 404: MessageOut},
     auth=ClientOnlyAuth(),
-    summary="Cliente edita a própria avaliação (nota/comentário)",
+    summary="Edita a nota/comentário da própria avaliação (volta pra moderação se já estava pública)",
 )
 @ratelimit(key="user", rate="20/m", block=True)
-def update_own_review_router(request, reviews_id: uuid.UUID, payload: ReviewsUpdateIn):
+def update_my_review_router(request, reviews_id: uuid.UUID, payload: ReviewsUpdateIn):
     try:
         user: User = request.auth
         return Status(200, update_own_review(user.user_id, reviews_id, payload))
@@ -115,10 +109,10 @@ def update_own_review_router(request, reviews_id: uuid.UUID, payload: ReviewsUpd
     "/me/{reviews_id}",
     response={204: None, 404: MessageOut},
     auth=ClientOnlyAuth(),
-    summary="Cliente exclui a própria avaliação",
+    summary="Exclui a própria avaliação",
 )
-@ratelimit(key="user", rate="10/m", block=True)
-def delete_own_review_router(request, reviews_id: uuid.UUID):
+@ratelimit(key="user", rate="20/m", block=True)
+def delete_my_review_router(request, reviews_id: uuid.UUID):
     try:
         user: User = request.auth
         delete_own_review(user.user_id, reviews_id)
@@ -128,41 +122,41 @@ def delete_own_review_router(request, reviews_id: uuid.UUID):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Público (leitura, sem autenticação)
+# Público — leitura, sem autenticação
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get(
-    "/order-item/{order_item_id}",
+    "/products/{product_id}",
     response={200: list[ReviewsOut]},
     auth=None,
-    summary="Lista a avaliação pública (se autorizada) de um item de pedido",
+    summary="Lista as avaliações autorizadas (públicas) de um produto",
 )
-def list_public_reviews_for_order_item_router(request, order_item_id: uuid.UUID):
-    return Status(200, list_public_reviews_for_order_item(order_item_id))
-
-
-@router.get(
-    "/product/{product_id}",
-    response={200: list[ReviewsOut]},
-    auth=None,
-    summary="Lista as avaliações públicas de um produto",
-)
-def list_public_reviews_for_product_router(request, product_id: uuid.UUID):
+def list_product_reviews_router(request, product_id: uuid.UUID):
     return Status(200, list_public_reviews_for_product(product_id))
 
 
 @router.get(
-    "/product/{product_id}/summary",
+    "/products/{product_id}/summary",
     response={200: ProductRatingSummaryOut},
     auth=None,
-    summary="Média e total de avaliações públicas de um produto",
+    summary="Média e total de avaliações autorizadas de um produto",
 )
 def get_product_rating_summary_router(request, product_id: uuid.UUID):
     return Status(200, get_product_rating_summary(product_id))
 
 
+@router.get(
+    "/order-items/{order_item_id}",
+    response={200: list[ReviewsOut]},
+    auth=None,
+    summary="Avaliação pública (se houver e estiver autorizada) de um item de pedido específico",
+)
+def list_order_item_reviews_router(request, order_item_id: uuid.UUID):
+    return Status(200, list_public_reviews_for_order_item(order_item_id))
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# Admin
+# Admin — moderação
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get(
