@@ -69,6 +69,7 @@ def list_products_router(
     size: Optional[ProductSizeEnum] = None,
     color: Optional[ProductColorEnum] = None,
     in_stock_only: bool = False,
+    sort: Optional[str] = None,
 ):
     qs = search_products_queryset(
         search=search,
@@ -78,6 +79,7 @@ def list_products_router(
         color=color.value if color else None,
         in_stock_only=in_stock_only,
         active_only=True,
+        sort=sort,
     )
     return 200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm)
 

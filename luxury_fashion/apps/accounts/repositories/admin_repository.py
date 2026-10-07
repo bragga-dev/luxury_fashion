@@ -24,6 +24,24 @@ def create_admin_profile(
     return admin_profile
 
 
+def get_or_create_admin_profile(user: User) -> AdminProfile:
+    """
+    Garante que todo usuário com role ADMIN tenha um AdminProfile.
+
+    Cobre o caso de admins promovidos direto no banco/Django admin (ou
+    criados antes deste model existir), que nunca passaram pelo comando
+    `createsuperuser` customizado — o único lugar que hoje cria o profile.
+    Sem isso, update/upload/delete de perfil admin quebravam sempre com
+    404 "Perfil de administrador não encontrado." pra esses usuários.
+    """
+    admin_profile = getattr(user, "admin_profile", None)
+    if admin_profile:
+        return admin_profile
+
+    default_name = user.email.split("@")[0]
+    return create_admin_profile(user_id=user, full_name=default_name)
+
+
 def update_admin_profile(admin_profile: AdminProfile, **fields) -> AdminProfile:
     for attr, value in fields.items():
         if value is not None:

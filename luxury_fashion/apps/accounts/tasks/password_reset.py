@@ -22,7 +22,11 @@ def send_password_reset_email(self, user_id: str, uid: str, token: str) -> None:
     try:
         user = User.objects.get(pk=user_id)
 
-        reset_url = build_password_reset_url(user)
+        # Usa o uid/token já gerados em request_password_reset — antes essa
+        # task ignorava os argumentos recebidos e gerava um par novo aqui
+        # dentro (via build_password_reset_url(user)), o que era código morto
+        # e podia divergir do uid "sem padding" que o resto do fluxo espera.
+        reset_url = build_password_reset_url(uid, token)
 
         logger.info("Password reset URL generated: %s", reset_url)
 

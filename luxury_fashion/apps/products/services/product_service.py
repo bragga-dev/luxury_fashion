@@ -85,6 +85,7 @@ def search_products_queryset(
     color: Optional[str] = None,
     in_stock_only: bool = False,
     active_only: bool = True,
+    sort: Optional[str] = None,
 ):
     """
     Mesma filtragem de `search_products_for_all`, mas devolve o QuerySet
@@ -98,6 +99,7 @@ def search_products_queryset(
         color=color,
         in_stock_only=in_stock_only,
         active_only=active_only,
+        sort=sort,
     )
 
 

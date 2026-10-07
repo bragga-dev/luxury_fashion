@@ -17,7 +17,7 @@ def create_campaign_image(
     display_order: int = 0,
 ) -> CampaignImage:
     campaign_image = CampaignImage(
-        campaign=campaign,
+        campaign_id=campaign,
         image=image,
         is_cover=is_cover,
         display_order=display_order,
@@ -45,7 +45,7 @@ def delete_campaign_image(campaign_image: CampaignImage) -> None:
 @transaction.atomic
 def set_cover_campaign_image(campaign_image: CampaignImage) -> CampaignImage:
     CampaignImage.objects.filter(
-        campaign=campaign_image.campaign,
+        campaign_id=campaign_image.campaign_id,
         is_cover=True,
     ).exclude(
         pk=campaign_image.pk,

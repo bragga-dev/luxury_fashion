@@ -54,11 +54,16 @@ def filter_products(
     color: Optional[str] = None,
     in_stock_only: bool = False,
     active_only: bool = True,
+    sort: Optional[str] = None,
 ) -> QuerySet[Product]:
     """
     Filtro combinado da vitrine. `gender`/`size`/`color` filtram por
     variantes existentes do produto (ex.: gender="masculino" só retorna
     produtos que tenham ao menos uma variante masculina).
+
+    `sort`: None (default) mantém a ordenação alfabética de `Product.Meta`
+    (usada no catálogo/busca). `"recent"` ordena pelos mais recém-criados
+    primeiro — usado na seção "Novidades" da home.
     """
     qs = Product.objects.select_related("product_category_id")
 
@@ -87,4 +92,8 @@ def filter_products(
     if in_stock_only:
         qs = qs.filter(variants__is_active=True, variants__stock__gt=0)
 
-    return _with_variants_and_images(qs.distinct())
+    qs = qs.distinct()
+    if sort == "recent":
+        qs = qs.order_by("-created_at")
+
+    return _with_variants_and_images(qs)
