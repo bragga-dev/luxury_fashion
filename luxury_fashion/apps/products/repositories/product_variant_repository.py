@@ -18,18 +18,14 @@ def create_variant(
     price: Decimal,
     size: Optional[str] = None,
     color: Optional[str] = None,
-    gender: Optional[str] = None,
     stock: int = 0,
-    description: str = "",
 ) -> ProductVariant:
     variant = ProductVariant(
         product_id=product_id,
         size=size,
         color=color,
-        gender=gender,
         price=price,
         stock=stock,
-        description=description,
     )
     variant.full_clean()
     variant.save()

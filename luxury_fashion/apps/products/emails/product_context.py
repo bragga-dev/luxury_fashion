@@ -78,13 +78,13 @@ def format_datetime_br(value: datetime) -> str:
 def build_product_block(variant: ProductVariant) -> dict:
     """Campos de produto + valores praticados no momento do agendamento."""
     return {
-        "produtct_name": variant.product_id.name,
-        "produtct_description": variant.description,
+        "produtct_name": variant.product_id.product_name,
+        "produtct_description": variant.product_id.description,
         "product_image": variant.product_id.images,
         "product_price": variant.price,
         "product_size": variant.size,
         "product_color": variant.color,
-        "product_gender": variant.gender,
+        "product_gender": variant.product_id.gender,
     }
 
 def build_order_datetime_block(order: Order) -> dict:

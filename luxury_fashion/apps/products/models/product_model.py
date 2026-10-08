@@ -1,9 +1,7 @@
+import uuid
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-import uuid 
-from django.core.validators import MinValueValidator
-from luxury_fashion.apps.core.validators.image_validator import validate_image_file
-
 
 
 class Product(models.Model):
@@ -45,7 +43,6 @@ class Product(models.Model):
         SIZE_62 = "62", _("62")
         SIZE_64 = "64", _("64")
 
-
     class ProductColor(models.TextChoices):
         BLACK = "black", _("Preto")
         WHITE = "white", _("Branco")
@@ -63,14 +60,49 @@ class Product(models.Model):
         WINE = "wine", _("Vinho")
         OFF_WHITE = "off_white", _("Off-White")
 
+    product_category_id = models.ForeignKey("products.ProductCategory",
+        on_delete=models.PROTECT,
+        related_name="products",
+        verbose_name=_("Categoria"),
+    )
 
-    product_category_id = models.ForeignKey("products.ProductCategory", on_delete=models.PROTECT, related_name="product_category")
-    product_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product_name = models.CharField(_("Nome"), max_length=100, blank=False, null=False)
-   
-    is_active = models.BooleanField(_("Ativa?"), default=True)
-    created_at = models.DateTimeField(_("Criada em"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("Atualizada em"), auto_now=True)
+    product_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    product_name = models.CharField(
+        _("Nome"),
+        max_length=100,
+    )
+
+    gender = models.CharField(
+        _("Gênero"),
+        max_length=20,
+        choices=ProductGender.choices,
+    )
+
+    description = models.TextField(
+        _("Descrição"),
+        blank=True,
+        default="",
+    )
+
+    is_active = models.BooleanField(
+        _("Ativo?"),
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        _("Criado em"),
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        _("Atualizado em"),
+        auto_now=True,
+    )
 
     class Meta:
         verbose_name = _("Produto")
@@ -78,6 +110,4 @@ class Product(models.Model):
         ordering = ["product_name"]
 
     def __str__(self):
-        return f"{self.product_name}"
-
-  
+        return self.product_name

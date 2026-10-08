@@ -6,6 +6,7 @@ from ninja import Schema
 from pydantic import field_validator
 
 from luxury_fashion.apps.products.models.product_model import Product
+from luxury_fashion.apps.products.schemas.product_enums_schema import ProductGenderEnum
 from luxury_fashion.apps.products.schemas.produc_image_schema import ImageOut
 from luxury_fashion.apps.products.schemas.product_category_schema import ProductCategoryOut
 from luxury_fashion.apps.products.schemas.product_shipping_schema import ShippingCreateIn
@@ -23,6 +24,8 @@ def _pick_cover_image(images: list) -> Optional["ImageOut"]:
 class ProductCreateIn(Schema):
     product_name: str
     product_category_id: uuid.UUID
+    gender: ProductGenderEnum
+    description: str = ""
 
     @field_validator("product_name")
     @classmethod
@@ -36,8 +39,9 @@ class ProductCreateIn(Schema):
 class ProductCreateFullIn(Schema):
     """
     Payload de conveniência para o formulário de cadastro completo: cria o
-    produto, sua primeira variante (tamanho/cor/gênero/preço/estoque/descrição)
-    e os dados de frete dessa variante (peso/dimensões) numa única chamada.
+    produto (nome/categoria/gênero/descrição), sua primeira variante
+    (tamanho/cor/preço/estoque) e os dados de frete dessa variante
+    (peso/dimensões) numa única chamada.
 
     As tabelas continuam normalizadas (Product / ProductVariant /
     ProductShipping) — este schema só agrupa a entrada para o front não
@@ -45,6 +49,8 @@ class ProductCreateFullIn(Schema):
     """
     product_name: str
     product_category_id: uuid.UUID
+    gender: ProductGenderEnum
+    description: str = ""
     variant: VariantCreateIn
     shipping: ShippingCreateIn
 
@@ -60,6 +66,8 @@ class ProductCreateFullIn(Schema):
 class ProductUpdateIn(Schema):
     product_name: Optional[str] = None
     product_category_id: Optional[uuid.UUID] = None
+    gender: Optional[ProductGenderEnum] = None
+    description: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -73,6 +81,8 @@ class ProductListOut(Schema):
     """
     product_id: uuid.UUID
     product_name: str
+    gender: str
+    description: str
     category: ProductCategoryOut
     is_active: bool
     variants: List[VariantOut]
@@ -94,6 +104,8 @@ class ProductListOut(Schema):
         return cls(
             product_id=product.product_id,
             product_name=product.product_name,
+            gender=product.gender,
+            description=product.description,
             category=ProductCategoryOut.from_orm(product.product_category_id),
             is_active=product.is_active,
             variants=variants,
@@ -120,6 +132,8 @@ class ProductOut(ProductListOut):
         return cls(
             product_id=product.product_id,
             product_name=product.product_name,
+            gender=product.gender,
+            description=product.description,
             category=ProductCategoryOut.from_orm(product.product_category_id),
             is_active=product.is_active,
             variants=variants,

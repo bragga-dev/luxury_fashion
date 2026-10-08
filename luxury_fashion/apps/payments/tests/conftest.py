@@ -99,7 +99,11 @@ def product_category(db) -> ProductCategory:
 
 @pytest.fixture
 def product(product_category) -> Product:
-    return Product.objects.create(product_category_id=product_category, product_name="Vestido Longo")
+    return Product.objects.create(
+        product_category_id=product_category,
+        product_name="Vestido Longo",
+        gender=Product.ProductGender.FEMININO,
+    )
 
 
 @pytest.fixture
@@ -108,7 +112,6 @@ def variant(product) -> ProductVariant:
         product_id=product,
         size=Product.ProductSize.M,
         color=Product.ProductColor.BLACK,
-        gender=Product.ProductGender.FEMININO,
         price=Decimal("199.90"),
         stock=5,
     )
@@ -120,7 +123,6 @@ def other_variant(product) -> ProductVariant:
         product_id=product,
         size=Product.ProductSize.G,
         color=Product.ProductColor.RED,
-        gender=Product.ProductGender.FEMININO,
         price=Decimal("249.90"),
         stock=3,
     )
