@@ -447,8 +447,20 @@ ORIGIN_ZIP_CODE = "45201347"
 # =========================================================
 # FRENET
 # =========================================================
+# Cotação (API de cliente) — só exige o token do cliente.
 FRENET_BASE_URL = env("FRENET_BASE_URL", default="https://api.frenet.com.br")
 FRENET_API_KEY = env("FRENET_API_KEY")
+
+# Etiquetas (Orders OneClick) — API Whitelabel, exige Partner Token.
+# Só existe produção (o ambiente hml foi desativado pela Frenet).
+FRENET_WHITELABEL_BASE_URL = env("FRENET_WHITELABEL_BASE_URL", default="https://whitelabel.apifrenet.com.br")
+FRENET_PARTNER_TOKEN = env("FRENET_PARTNER_TOKEN", default="")
+FRENET_PRINTING_FORMAT = env("FRENET_PRINTING_FORMAT", default="")  # vazio = A4 (padrão da Frenet)
+# Base pública do backend que recebe os webhooks (ex.: https://api.seudominio.com). Vazio = não envia.
+FRENET_WEBHOOK_BASE_URL = env("FRENET_WEBHOOK_BASE_URL", default="")
+# Header de segurança opcional dos webhooks (a Frenet precisa ser avisada do par nome/valor).
+FRENET_WEBHOOK_TOKEN_NAME = env("FRENET_WEBHOOK_TOKEN_NAME", default="FRENET_INTEGRATION")
+FRENET_WEBHOOK_TOKEN_VALUE = env("FRENET_WEBHOOK_TOKEN_VALUE", default="")
 
 
 # ==============================================================

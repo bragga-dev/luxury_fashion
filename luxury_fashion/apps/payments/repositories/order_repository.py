@@ -19,6 +19,7 @@ def create_order(
     subtotal: Decimal,
     order_shipping_total: Decimal,
     total_geral: Decimal,
+    shipping_service_code: str | None = None,
 ) -> Order:
     order = Order(
         user_id=user,
@@ -26,6 +27,7 @@ def create_order(
         subtotal=subtotal,
         order_shipping_total=order_shipping_total,
         total_geral=total_geral,
+        shipping_service_code=shipping_service_code,
     )
     order.full_clean()
     order.save()

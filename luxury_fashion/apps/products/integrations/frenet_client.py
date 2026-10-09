@@ -1,7 +1,11 @@
 import logging
 import requests
 from django.conf import settings
-from luxury_fashion.apps.core.exceptions.shipping import FrenetAPIError
+from luxury_fashion.apps.core.exceptions.shipping import (
+    FrenetAPIError,
+    FrenetInsufficientBalanceError,
+    FrenetPartnerTokenMissingError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -22,9 +26,11 @@ class FrenetClient:
     product_shipping_service.
 
     Configurações:
-    - FRENET_BASE_URL
-    - FRENET_API_KEY
+    - FRENET_BASE_URL (cotação) / FRENET_API_KEY (token do cliente)
+    - FRENET_WHITELABEL_BASE_URL / FRENET_PARTNER_TOKEN (etiquetas OneClick)
     """
+
+    INSUFFICIENT_BALANCE_CODE = 3000
 
     def __init__(self):
         self.base_url = settings.FRENET_BASE_URL.rstrip("/")
@@ -38,7 +44,16 @@ class FrenetClient:
             }
         )
 
-    def _request(self, method: str, path: str, **kwargs,) -> dict:
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        base_url: str | None = None,
+        timeout: int = 15,
+        log_body: bool = True,
+        **kwargs,
+    ) -> dict:
         """
         Executa uma requisição HTTP contra a API da Frenet.
 
@@ -51,18 +66,19 @@ class FrenetClient:
         - parsing da resposta JSON.
         """
 
-        url = f"{self.base_url}{path}"
-        logger.info("Frenet request: %s %s | body=%s", method, url, kwargs.get("json"),)
+        url = f"{(base_url or self.base_url).rstrip('/')}{path}"
+        # log_body=False em payloads com PII (CPF, telefone, endereço).
+        logger.info("Frenet request: %s %s | body=%s", method, url, kwargs.get("json") if log_body else "<omitido>")
 
         try:
-            response = self.session.request(method, url, timeout=15, **kwargs)
+            response = self.session.request(method, url, timeout=timeout, **kwargs)
 
         except requests.RequestException as exc:
             logger.exception("Falha de conexão com a Frenet: %s %s", method, url)
 
             raise FrenetAPIError(f"Falha de conexão com a Frenet: {exc}") from exc
 
-        logger.info("Frenet response: %s %s -> %s | body=%r", method, url, response.status_code, response.text[:500])
+        logger.info("Frenet response: %s %s -> %s | body=%r", method, url, response.status_code, response.text[:1000])
 
         if not response.ok:
             payload = {}
@@ -80,6 +96,11 @@ class FrenetClient:
 
             except (ValueError, AttributeError):
                 pass
+
+            details = payload.get("Details") if isinstance(payload, dict) else None
+            if details:
+                joined = "; ".join(f"[{d.get('Code')}] {d.get('Message')}" for d in details if isinstance(d, dict))
+                message = f"{message} — {joined}" if message else joined
 
             if not message:
                 message = (f"Frenet retornou HTTP {response.status_code} " f"para {method} {path}.")
@@ -134,3 +155,51 @@ class FrenetClient:
         }
 
         return self._request("POST", "/shipping/quote", json=payload)
+
+    # ─────────────────────────────────────────────────────────────
+    # Orders OneClick (API Whitelabel)
+    # ─────────────────────────────────────────────────────────────
+
+    def create_order_oneclick(self, shipments: list[dict]) -> dict:
+        """
+        Cria o pedido na Frenet, paga com o saldo da carteira e gera a etiqueta
+        numa única chamada (POST /v1/orders/oneclick).
+
+        Auth: `token` (cliente, já no session) + `x-partner-token`.
+        Retorna o ShipmentBatchResult cru; interpretação fica no service.
+
+        ATENÇÃO: a chamada gasta saldo. Timeout aqui NÃO significa que nada
+        aconteceu — o service não deve reenviar sem checar o painel/Order.Id.
+        """
+        if not settings.FRENET_PARTNER_TOKEN:
+            raise FrenetPartnerTokenMissingError(
+                "Geração de etiqueta indisponível: FRENET_PARTNER_TOKEN não configurado."
+            )
+
+        headers = {"x-partner-token": settings.FRENET_PARTNER_TOKEN}
+        if settings.FRENET_PRINTING_FORMAT:
+            headers["x-printing-format"] = settings.FRENET_PRINTING_FORMAT
+
+        try:
+            return self._request(
+                "POST",
+                "/v1/orders/oneclick",
+                base_url=settings.FRENET_WHITELABEL_BASE_URL,
+                headers=headers,
+                json=shipments,
+                timeout=60,
+                log_body=False,
+            )
+        except FrenetAPIError as exc:
+            if self._has_error_code(exc.payload, self.INSUFFICIENT_BALANCE_CODE):
+                raise FrenetInsufficientBalanceError(
+                    "Saldo insuficiente na carteira Frenet para gerar a etiqueta.",
+                    status_code=exc.status_code,
+                    payload=exc.payload,
+                ) from exc
+            raise
+
+    @staticmethod
+    def _has_error_code(payload: dict, code: int) -> bool:
+        details = (payload or {}).get("Details") or []
+        return any(isinstance(d, dict) and d.get("Code") == code for d in details)

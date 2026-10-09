@@ -16,6 +16,13 @@ class Order(models.Model):
         REFUNDED = "REFUNDED", _("Reembolsado")
         FAILED = "FAILED", _("Falhou")
 
+    class ShippingStatus(models.TextChoices):
+        PENDING = "pending", "Aguardando envio"
+        LABEL_GENERATED = "label_generated", "Etiqueta gerada"
+        SHIPPED = "shipped", "Enviado"
+        IN_TRANSIT = "in_transit", "Em transporte"
+        DELIVERED = "delivered", "Entregue"
+
     ALLOWED_TRANSITIONS = {
         StatusOrder.PENDING: {StatusOrder.COMPLETED, StatusOrder.CANCELLED, StatusOrder.FAILED},
         StatusOrder.COMPLETED: {StatusOrder.REFUNDED},
@@ -37,6 +44,13 @@ class Order(models.Model):
     completed_at = models.DateTimeField(_("Concluído em"), null=True, blank=True)
     created_at = models.DateTimeField(_("Data da compra"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Data de atualização"), auto_now=True)
+
+    shipping_service_code = models.CharField(_("Código do serviço Frenet"), max_length=50, blank=True, null=True, help_text=_("Service code retornado pela cotação Frenet e escolhido pelo cliente no checkout."))
+    frenet_order_id = models.CharField(max_length=100, blank=True, null=True)
+    shipping_tracking_code = models.CharField(max_length=100, blank=True, null=True)
+    shipping_label_url = models.URLField(blank=True, null=True)
+    shipping_status = models.CharField(max_length=30, choices=ShippingStatus.choices, default=ShippingStatus.PENDING)
+    shipped_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         verbose_name = _("Pedido")

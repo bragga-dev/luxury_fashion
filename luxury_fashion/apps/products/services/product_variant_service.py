@@ -30,6 +30,7 @@ from luxury_fashion.apps.products.selectors.product_variant_selector import (
     get_variant_by_id,
     get_variants_by_product,
     variant_exists_for_product_size_color,
+    variant_exists_for_sku,
 )
 
 
@@ -63,6 +64,9 @@ def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> Va
     if product is None:
         raise ProductNotFound()
 
+    if variant_exists_for_sku(sku=data.sku):
+        raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
+
     if variant_exists_for_product_size_color(
         product_id=product_id, size=data.size, color=data.color,
     ):
@@ -70,6 +74,7 @@ def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> Va
 
     variant = create_variant(
         product_id=product,
+        sku=data.sku,
         price=data.price,
         size=data.size,
         color=data.color,
@@ -85,6 +90,9 @@ def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> Va
         for key, value in data.dict(exclude_unset=True).items()
         if value is not None
     }
+
+    if "sku" in fields and variant_exists_for_sku(sku=fields["sku"], exclude_id=variant_id):
+        raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
 
     touches_combo = any(k in fields for k in ("size", "color"))
     if touches_combo:

@@ -27,6 +27,13 @@ def variant_exists_for_product_size_color(
     return qs.exists()
 
 
+def variant_exists_for_sku(sku: str, exclude_id: Optional[uuid.UUID] = None) -> bool:
+    qs = ProductVariant.objects.filter(sku=sku)
+    if exclude_id:
+        qs = qs.exclude(pk=exclude_id)
+    return qs.exists()
+
+
 def get_variants_by_product(product_id: uuid.UUID, active_only: bool = True) -> QuerySet[ProductVariant]:
     qs = ProductVariant.objects.filter(product_id=product_id)
     if active_only:

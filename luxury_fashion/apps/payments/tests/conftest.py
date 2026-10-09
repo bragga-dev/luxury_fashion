@@ -110,6 +110,7 @@ def product(product_category) -> Product:
 def variant(product) -> ProductVariant:
     return ProductVariant.objects.create(
         product_id=product,
+        sku="VESTIDO-M-PRETO",
         size=Product.ProductSize.M,
         color=Product.ProductColor.BLACK,
         price=Decimal("199.90"),
@@ -121,6 +122,7 @@ def variant(product) -> ProductVariant:
 def other_variant(product) -> ProductVariant:
     return ProductVariant.objects.create(
         product_id=product,
+        sku="VESTIDO-G-VERMELHO",
         size=Product.ProductSize.G,
         color=Product.ProductColor.RED,
         price=Decimal("249.90"),

@@ -81,6 +81,7 @@ def create_order_from_cart(user_id: uuid.UUID, data: OrderCreateIn) -> OrderOut:
         subtotal=cart.total_price,
         order_shipping_total=cart.total_shipping,
         total_geral=cart.total_geral,
+        shipping_service_code=data.shipping_service_code,
     )
 
     bulk_create_order_items(

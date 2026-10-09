@@ -11,14 +11,30 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
 from ninja import Router
 
-from luxury_fashion.apps.core.exceptions import ProductNotFound, VariantAlreadyExists, VariantNotFound
+from luxury_fashion.apps.core.exceptions import (
+    ProductNotFound,
+    ShippingAlreadyExists,
+    ShippingNotFound,
+    VariantAlreadyExists,
+    VariantNotFound,
+)
 from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
+from luxury_fashion.apps.products.schemas.product_shipping_schema import (
+    ShippingCreateIn,
+    ShippingOut,
+    ShippingUpdateIn,
+)
 from luxury_fashion.apps.products.schemas.product_variant_schema import (
     VariantCreateIn,
     VariantOut,
     VariantUpdateIn,
+)
+from luxury_fashion.apps.products.services.product_shipping_service import (
+    create_shipping_for_admin,
+    get_shipping_for_all,
+    update_shipping_for_admin,
 )
 from luxury_fashion.apps.products.services.product_variant_service import (
     activate_variant_for_admin,
@@ -141,3 +157,53 @@ def set_variant_stock_router(request, variant_id: uuid.UUID, stock: int):
         return 404, {"detail": str(e)}
     except InsufficientStock as e:
         return 409, {"detail": str(e)}
+
+
+# ── Embalagem / dados de frete da variante (admin) ─────────────────────────────
+
+@router.get(
+    "/variants/{variant_id}/shipping",
+    response={200: ShippingOut, 404: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Consulta os dados de embalagem/frete (peso e dimensões) de uma variante",
+)
+@ratelimit(key="user", rate="60/m", block=True)
+def get_variant_shipping_router(request, variant_id: uuid.UUID):
+    try:
+        return 200, get_shipping_for_all(variant_id)
+    except ShippingNotFound as e:
+        return 404, {"detail": str(e)}
+
+
+@router.post(
+    "/variants/{variant_id}/shipping",
+    response={201: ShippingOut, 404: MessageOut, 409: MessageOut, 400: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Cadastra os dados de embalagem/frete de uma variante que ainda não tem",
+)
+@ratelimit(key="user", rate="30/h", block=True)
+def create_variant_shipping_router(request, variant_id: uuid.UUID, payload: ShippingCreateIn):
+    try:
+        return 201, create_shipping_for_admin(variant_id, payload)
+    except VariantNotFound as e:
+        return 404, {"detail": str(e)}
+    except ShippingAlreadyExists as e:
+        return 409, {"detail": str(e)}
+    except DjangoValidationError as e:
+        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+
+
+@router.patch(
+    "/variants/{variant_id}/shipping",
+    response={200: ShippingOut, 404: MessageOut, 400: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Atualiza a embalagem/frete (peso, altura, largura, comprimento, quantidade) de uma variante",
+)
+@ratelimit(key="user", rate="30/h", block=True)
+def update_variant_shipping_router(request, variant_id: uuid.UUID, payload: ShippingUpdateIn):
+    try:
+        return 200, update_shipping_for_admin(variant_id, payload)
+    except ShippingNotFound as e:
+        return 404, {"detail": str(e)}
+    except DjangoValidationError as e:
+        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}

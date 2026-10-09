@@ -27,6 +27,7 @@ class OrderCreateIn(Schema):
     nome de outro usuário.
     """
     shipping_address_id: uuid.UUID
+    shipping_service_code: Optional[str] = None
 
 
 class OrderCancelIn(Schema):
@@ -43,6 +44,7 @@ class OrderOut(Schema):
     order_shipping_total: Decimal
     total_geral: Decimal
     shipping_address_id: uuid.UUID
+    shipping_service_code: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -59,6 +61,7 @@ class OrderOut(Schema):
             order_shipping_total=order.order_shipping_total,
             total_geral=order.total_geral,
             shipping_address_id=order.shipping_address_id,
+            shipping_service_code=order.shipping_service_code,
             created_at=order.created_at,
             updated_at=order.updated_at,
         )

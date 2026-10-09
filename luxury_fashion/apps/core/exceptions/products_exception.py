@@ -39,7 +39,7 @@ class VariantNotFound(Exception):
 
 class VariantAlreadyExists(Exception):
     def __init__(self, message=None):
-        self.message = message or _("Já existe uma variante com esse tamanho, cor e gênero para este produto.")
+        self.message = message or _("Já existe uma variante com esse tamanho e cor para este produto.")
         super().__init__(self.message)
 
 
