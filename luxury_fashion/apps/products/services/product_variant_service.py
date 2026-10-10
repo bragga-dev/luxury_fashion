@@ -64,7 +64,7 @@ def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> Va
     if product is None:
         raise ProductNotFound()
 
-    if variant_exists_for_sku(sku=data.sku):
+    if data.sku and variant_exists_for_sku(sku=data.sku):
         raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
 
     if variant_exists_for_product_size_color(
@@ -91,7 +91,7 @@ def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> Va
         if value is not None
     }
 
-    if "sku" in fields and variant_exists_for_sku(sku=fields["sku"], exclude_id=variant_id):
+    if fields.get("sku") and variant_exists_for_sku(sku=fields["sku"], exclude_id=variant_id):
         raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
 
     touches_combo = any(k in fields for k in ("size", "color"))

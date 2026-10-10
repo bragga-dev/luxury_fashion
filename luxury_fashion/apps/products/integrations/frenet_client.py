@@ -156,6 +156,37 @@ class FrenetClient:
 
         return self._request("POST", "/shipping/quote", json=payload)
 
+    def calculate_shipping_for_items(
+        self,
+        *,
+        seller_cep: str,
+        recipient_cep: str,
+        items: list[dict],
+        invoice_value: float,
+    ) -> dict:
+        """
+        Cotação de uma remessa com VÁRIOS itens (carrinho inteiro) numa chamada só.
+
+        Cada item: {"weight", "length", "height", "width", "quantity"} (peso/dimensões
+        por unidade). Sem regra de negócio — só monta o payload da Frenet.
+        """
+        payload = {
+            "SellerCEP": str(seller_cep),
+            "RecipientCEP": str(recipient_cep),
+            "ShipmentInvoiceValue": round(float(invoice_value), 2),
+            "ShippingItemArray": [
+                {
+                    "Weight": float(i["weight"]),
+                    "Length": float(i["length"]),
+                    "Height": float(i["height"]),
+                    "Width": float(i["width"]),
+                    "Quantity": int(i["quantity"]),
+                }
+                for i in items
+            ],
+        }
+        return self._request("POST", "/shipping/quote", json=payload)
+
     # ─────────────────────────────────────────────────────────────
     # Orders OneClick (API Whitelabel)
     # ─────────────────────────────────────────────────────────────

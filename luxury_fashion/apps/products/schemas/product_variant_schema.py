@@ -13,7 +13,7 @@ from luxury_fashion.apps.products.schemas.product_enums_schema import (
 
 
 class VariantCreateIn(Schema):
-    sku: str = Field(min_length=1, max_length=50)
+    sku: Optional[str] = Field(default=None, max_length=50)
     size: Optional[ProductSizeEnum] = None
     color: Optional[ProductColorEnum] = None
     price: Decimal
@@ -21,11 +21,11 @@ class VariantCreateIn(Schema):
 
     @field_validator("sku")
     @classmethod
-    def sku_strip(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("SKU não pode ser vazio.")
-        return v
+    def sku_normalize(cls, v: Optional[str]) -> Optional[str]:
+        # "" vira None: o campo é único, e vários "" colidiriam entre si.
+        if v is None:
+            return None
+        return v.strip() or None
 
     @field_validator("price")
     @classmethod
@@ -36,17 +36,24 @@ class VariantCreateIn(Schema):
 
 
 class VariantUpdateIn(Schema):
-    sku: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    sku: Optional[str] = Field(default=None, max_length=50)
     size: Optional[ProductSizeEnum] = None
     color: Optional[ProductColorEnum] = None
     price: Optional[Decimal] = None
     stock: Optional[int] = None
     is_active: Optional[bool] = None
 
+    @field_validator("sku")
+    @classmethod
+    def sku_normalize(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return v.strip() or None
+
 
 class VariantOut(Schema):
     variant_id: uuid.UUID
-    sku: str
+    sku: Optional[str] = None
     size: Optional[str] = None
     color: Optional[str] = None
     price: Decimal

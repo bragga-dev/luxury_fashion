@@ -22,14 +22,19 @@ SHIPMENT_CANCELLED = 7
 
 def is_valid_webhook_token(headers) -> bool:
     """
-    Header de segurança é OPCIONAL na Frenet. Se FRENET_WEBHOOK_TOKEN_VALUE estiver
-    configurado, exigimos o header FRENET_WEBHOOK_TOKEN_NAME com esse valor.
+    Os webhooks mexem no status de envio dos pedidos, então NÃO ficam abertos: sem
+    FRENET_WEBHOOK_TOKEN_VALUE configurado só aceitamos em DEBUG (dev). Em produção, o
+    header FRENET_WEBHOOK_TOKEN_NAME com esse valor é obrigatório (avisar a Frenet do par).
     """
     expected = getattr(settings, "FRENET_WEBHOOK_TOKEN_VALUE", "")
     if not expected:
-        return True
+        if not settings.DEBUG:
+            logger.error("FRENET_WEBHOOK_TOKEN_VALUE não configurado: webhook Frenet recusado.")
+        return bool(settings.DEBUG)
     name = getattr(settings, "FRENET_WEBHOOK_TOKEN_NAME", "FRENET_INTEGRATION")
-    return hmac.compare_digest(headers.get(name, ""), expected)
+    # Django expõe o header com hífen ("Frenet-Integration") mesmo que o nome
+    # configurado use underscore; sem normalizar, o header nunca casava.
+    return hmac.compare_digest(headers.get(name.replace("_", "-"), ""), expected)
 
 
 def _find_order(order_code: str, shipment_id) -> Order | None:

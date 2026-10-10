@@ -62,10 +62,10 @@ def quote_shipping_for_variant(variant_id: uuid.UUID, data: ShippingQuoteIn)-> L
         quantity=quantity,
     )
 
-    return _parse_quote_response(response)
+    return parse_quote_response(response)
 
 
-def _parse_quote_response(response: dict) -> List[FrenetShippingOptionOut]:
+def parse_quote_response(response: dict) -> List[FrenetShippingOptionOut]:
     """
     Traduz o `ShippingSevicesArray` (nome com o typo que a própria API da
     Frenet usa) em opções utilizáveis pelo front.
@@ -94,3 +94,6 @@ def _parse_quote_response(response: dict) -> List[FrenetShippingOptionOut]:
             )
         )
     return parsed
+
+
+_parse_quote_response = parse_quote_response  # alias p/ compatibilidade

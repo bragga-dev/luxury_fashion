@@ -31,7 +31,6 @@ from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import (
     refunded_order,
-    completed_order,
 )
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut
 from luxury_fashion.apps.payments.selectors.asaas_customer_selector import get_asaas_customer_by_client_id
@@ -39,11 +38,13 @@ from luxury_fashion.apps.payments.selectors.order_selector import get_order_by_i
 from luxury_fashion.apps.payments.selectors.payment_selector import (
     get_open_payment_for_order,
     get_payment_by_asaas_id,
+    get_payment_by_id,
     get_payment_by_id_and_user,
     get_payments_by_order,
 )
 
 from luxury_fashion.apps.payments.repositories.payment_repository import create_payment, update_payment
+from luxury_fashion.apps.payments.services.order_service import confirm_order_payment
 from luxury_fashion.apps.payments.services.asaas_payment_mapper import (
     map_payment_creation_response,
     map_pix_qrcode_response,
@@ -178,11 +179,7 @@ def list_payments_for_order(user_id: uuid.UUID, order_id: uuid.UUID) -> list[Pay
     return [PaymentOut.from_orm(p) for p in get_payments_by_order(order.order_id)]
 
 
-def refund_payment(user_id: uuid.UUID, payment_id: uuid.UUID, value: Decimal | None, description: str | None) -> PaymentOut:
-    payment = get_payment_by_id_and_user(payment_id=payment_id, user_id=user_id)
-    if payment is None:
-        raise PaymentNotFound()
-
+def _do_refund(payment: Payment, value: Decimal | None, description: str | None) -> PaymentOut:
     if payment.status not in _REFUNDABLE_STATUSES or payment.billing_type not in _REFUNDABLE_BILLING_TYPES:
         raise PaymentNotRefundable()
 
@@ -190,6 +187,48 @@ def refund_payment(user_id: uuid.UUID, payment_id: uuid.UUID, value: Decimal | N
     response = asaas.refund_payment(payment.asaas_payment_id, value=value, description=description)
     payment = update_payment(payment, **map_refund_response(response))
     return PaymentOut.from_orm(payment)
+
+
+def refund_payment_as_admin(payment_id: uuid.UUID, value: Decimal | None, description: str | None) -> PaymentOut:
+    """Estorno feito pelo admin: sem restrição de dono nem de etapa de envio."""
+    payment = get_payment_by_id(payment_id=payment_id)
+    if payment is None:
+        raise PaymentNotFound()
+    return _do_refund(payment, value, description)
+
+
+def refund_payment(user_id: uuid.UUID, payment_id: uuid.UUID, value: Decimal | None, description: str | None) -> PaymentOut:
+    payment = get_payment_by_id_and_user(payment_id=payment_id, user_id=user_id)
+    if payment is None:
+        raise PaymentNotFound()
+
+    # O cliente só estorna sozinho enquanto o pedido ainda não foi pra separação/envio
+    # (sem etiqueta). Depois disso o estorno passa pelo admin (troca/devolução).
+    order = payment.order_id
+    if order.frenet_order_id or order.shipping_status != Order.ShippingStatus.PENDING:
+        raise PaymentNotRefundable(
+            "Este pedido já foi enviado ou está em separação. Para estorno, entre em contato com o suporte."
+        )
+
+    return _do_refund(payment, value, description)
+
+
+def _auto_refund_orphan_payment(payment: Payment, order: Order) -> None:
+    logger.warning(
+        "Pagamento %s recebido para pedido %s em status %s — estornando automaticamente.",
+        payment.asaas_payment_id, order.code, order.order_status,
+    )
+    if payment.billing_type not in _REFUNDABLE_BILLING_TYPES:
+        logger.error("Pagamento órfão %s (%s) não é estornável automaticamente — tratar manualmente.", payment.asaas_payment_id, payment.billing_type)
+        return
+    try:
+        response = AsaasClient().refund_payment(
+            payment.asaas_payment_id,
+            description=f"Estorno automático: pedido {order.code} já estava {order.order_status}.",
+        )
+        update_payment(payment, **map_refund_response(response))
+    except AsaasAPIError:
+        logger.exception("Falha ao estornar pagamento órfão %s — tratar manualmente.", payment.asaas_payment_id)
 
 
 def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
@@ -211,6 +250,11 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
 
     order = payment.order_id
     if status in _PAID_STATUSES and order.order_status != Order.StatusOrder.COMPLETED:
-        completed_order(order=order)
+        # É aqui que o estoque é debitado. False = pagamento não aceito (pedido já cancelado/
+        # expirado, ou faltou estoque): estorna automaticamente e responde 200 pra Asaas
+        # (antes isso virava 500 e o webhook era reenviado pra sempre).
+        if not confirm_order_payment(order.order_id):
+            order.refresh_from_db()
+            _auto_refund_orphan_payment(payment, order)
     elif status in _REFUND_STATUSES and order.order_status != Order.StatusOrder.REFUNDED:
         refunded_order(order=order)
