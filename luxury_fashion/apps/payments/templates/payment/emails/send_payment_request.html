@@ -2,7 +2,7 @@
 
 {% extends "core/emails/base.html" %}
 
-{% block title %}Solicitação de Pagamento — ÉLUXO MODAS{% endblock %}
+{% block title %}Solicitação de Pagamento — Gama Fashion{% endblock %}
 
 {% block preheader %}Confirme seu pedido realizando o pagamento.{% endblock %}
 
@@ -10,6 +10,7 @@
 
     <span class="section-label">Solicitação de pagamento</span>
     <h1 class="heading">Confirme seu pedido!</h1>
+    <div class="rule"></div>
 
     <p class="greeting">
         Olá, <strong>{{ client_name }}</strong>!
@@ -21,12 +22,12 @@
     </p>
 
     <!-- Status do Pagamento -->
-    <div style="text-align: center; margin: 4px 0 24px;">
+    <div class="text-center" style="margin: 4px 0 26px;">
         <span class="highlight-badge">Aguardando pagamento</span>
     </div>
 
     <!-- Detalhes do Pagamento -->
-    <div class="info-box plain">
+    <div class="info-box">
         <p class="info-box-title">Detalhes do pagamento</p>
 
         <div class="payment-row">
@@ -51,36 +52,32 @@
 
         <div class="payment-row">
             <span class="payment-label">Código do pagamento</span><br>
-            <span class="payment-value" style="font-family: 'Courier New', monospace; font-size: 12px;">{{ code_payment }}</span>
+            <span class="payment-value" style="font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 1px;">{{ code_payment }}</span>
         </div>
     </div>
 
     <!-- PIX - Pagamento via QR Code -->
     {% if payment_billing_type == "PIX" %}
-    <div class="pix-section" style="margin: 24px 0; text-align: center;">
-        <h3 style="font-family: 'Inter', Arial, Helvetica, sans-serif; font-size: 16px; color: #2c2a25; margin-bottom: 8px;">
-            Pagamento via PIX
-        </h3>
+    <div class="pix-section">
+        <h3>Pagamento via PIX</h3>
         <p class="body-text" style="margin-bottom: 12px;">
             Escaneie o QR Code abaixo ou copie o código PIX
         </p>
 
         {% if payment_pix_qr_code %}
-        <div class="qr-code-container" style="margin: 16px 0;">
-            <img src="{{ payment_pix_qr_code }}" alt="QR Code PIX" width="180" height="180" style="border: 2px solid #e8e6e1; border-radius: 8px;" />
+        <div class="qr-code-container">
+            <img src="{{ payment_pix_qr_code }}" alt="QR Code PIX" width="180" height="180" style="margin: 0 auto;" />
         </div>
         {% endif %}
 
         {% if payment_pix_copy_paste %}
-        <p style="font-family: 'Inter', Arial, Helvetica, sans-serif; font-size: 13px; color: #2c2a25; margin: 8px 0 4px;">
-            <strong>Copie o código PIX:</strong>
-        </p>
-        <div class="pix-copy-area" style="background-color: #f5f4f1; border-radius: 6px; padding: 12px; font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all; color: #2c2a25; margin: 8px 0 12px; border: 1px dashed #c9c6bf;">
+        <p class="info-box-title" style="margin: 12px 0 6px;">Copie o código PIX</p>
+        <div class="pix-copy-area">
             {{ payment_pix_copy_paste }}
         </div>
         {% endif %}
 
-        <p style="font-family: 'Inter', Arial, Helvetica, sans-serif; font-size: 12px; color: #6b6862; margin-top: 10px;">
+        <p style="font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 12px; color: #7d6a76; margin: 12px 0 0;">
             O pagamento é processado em até 5 minutos
         </p>
     </div>
@@ -88,21 +85,21 @@
 
     <!-- Link para fatura/Invoice -->
     {% if payment_invoice_url %}
-    <div style="text-align: center; margin: 4px 0 20px;">
-        <p class="info-box-text" style="text-align: center;">
-            <a href="{{ payment_invoice_url }}" style="color: #a85a76; text-decoration: underline;">Visualizar fatura</a>
+    <div class="text-center" style="margin: 4px 0 20px;">
+        <p class="info-box-text">
+            <a href="{{ payment_invoice_url }}">Visualizar fatura</a>
         </p>
     </div>
     {% endif %}
 
-    <hr class="divider" style="border: none; border-top: 1px solid #e8e6e1; margin: 24px 0;">
+    <hr class="divider">
 
     <!-- Botões de Ação -->
     <div class="cta-wrap">
         <!--[if mso]>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ client_orders_url }}" style="height:50px;v-text-anchor:middle;width:220px;" arcsize="15%" stroke="f" fillcolor="#a85a76">
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ client_orders_url }}" style="height:52px;v-text-anchor:middle;width:240px;" arcsize="4%" stroke="t" strokecolor="#721432" strokeweight="1pt" fillcolor="#8e1b3f">
             <w:anchorlock/>
-            <center style="color:#fffdfb;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">VER MEUS PEDIDOS</center>
+            <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:3px;">VER MEUS PEDIDOS</center>
         </v:roundrect>
         <![endif]-->
         <!--[if !mso]><!-->
@@ -116,18 +113,13 @@
     </div>
 
     <!-- Informações adicionais -->
-    <div class="info-box plain" style="background-color: #f9f6f2; border-left: 4px solid #a85a76;">
+    <div class="info-box gold">
         <p class="info-box-title">Importante</p>
         <p class="info-box-text">
             O pagamento é <strong>obrigatório</strong> para confirmar seu pedido.<br>
             Após a confirmação do pagamento, você receberá um e-mail de confirmação.<br>
             Em caso de dúvidas, entre em contato pelo nosso WhatsApp.
         </p>
-    </div>
-
-    <!-- Mensagem final -->
-    <div style="text-align: center; margin-top: 24px;">
-        <p class="body-text" style="margin: 0;">Agradecemos pela preferência!</p>
     </div>
 
     <!-- Warning -->
@@ -138,6 +130,12 @@
             Não compartilhe seu código PIX com terceiros.
             Em caso de problemas, entre em contato com nosso suporte.
         </p>
+    </div>
+
+    <!-- Mensagem final -->
+    <div class="closing-note">
+        <p class="script">Agradecemos pela preferência.</p>
+        <p class="team">Equipe Gama Fashion</p>
     </div>
 
 {% endblock %}

@@ -1,33 +1,43 @@
 <!-- ============================================================
      FILE: base.html
-     Layout base dos e-mails Éluxo Modas.
+     Layout base dos e-mails Gama Fashion - Moda Fitness.
+     Direção: maison refinada — ameixa profunda + branco, vinho como
+     acento, serifas clássicas, molduras duplas, filetes finos.
 
-     Identidade visual — espelha o banner/hero da home:
-       cream-950 #fbf3ea   fundo geral
-       cream-900 #fffdfb   fundo do card
-       sand-800  #f6e9dc   blocos internos / info-box
-       sand-700  #ead9c0   bordas
-       sand-600  #dcc7a3   bordas hover / divisores
-       ink-50    #3a2e24   títulos
-       ink-100   #4a3b2c   texto principal
-       ink-300   #6b5b4e   texto secundário
-       ink-500   #8a7860   texto mudo / labels
-       ink-600   #a6957f   texto mudo (footer)
-       rose-400  #d98ca3   hover / destaque claro
-       rose-500  #a85a76   cor primária da marca
-       rose-600  #8f4a63   ativo / borda
-       gold-300  #e8d2a0   hover do dourado
-       gold-400  #d9ba79   accent / CTA "gold"
-       gold-500  #b08a3e   texto sobre dourado
+     Paleta:
+       bg         #f8f1f3   fundo geral
+       card       #fffcfc   fundo do card
+       tint       #f6ecef   blocos internos / info-box
+       line       #e8d6dd   bordas
+       line-2     #d9bfca   bordas fortes / molduras
+       ink        #2d0f3a   títulos (ameixa noite)
+       text       #46283f   texto principal
+       text-2     #66505d   texto secundário   (contraste AA sobre branco)
+       muted      #7d6a76   labels / texto mudo (contraste AA sobre branco)
+       plum-900   #2d0f3a   footer
+       plum-800   #3a1348   header
+       plum-500   #6b2d83   roxo da marca
+       wine-600   #721432   ênfase
+       wine-500   #8e1b3f   vermelho da marca (CTA, preços, faixa)
+       rose-200   #e9c9d3   texto claro sobre fundo escuro
+       rose-300   #d9a5b5   ornamentos sobre fundo escuro
 
-     Fontes: Cormorant Garamond (display / headings, serif elegante)
-             Jost (labels, botões, corpo de texto — sans geométrica)
-             Parisienne (script — só no monograma/assinatura, com moderação)
-     Raio de borda: 14px no card, 10px nos blocos internos — igual ao
-     banner da home.
+     Fontes: sem web fonts (LGPD). Serif: Didot / Bodoni MT / Georgia.
+     "gold" nas classes = destaque vinho (nome mantido por compatibilidade
+     com os templates filhos).
+
+     Blocos Django: title, preheader, extra_styles, content, footer_links.
+       footer_links (opcional) — exemplo no template filho:
+         {% block footer_links %}
+           <a href="https://...">Loja</a><a href="https://...">Instagram</a>
+         {% endblock %}
+
+     Utilitários novos (opt-in nos filhos):
+       .rule         filete vinho curto, centralizado, p/ abaixo de .heading
+       .text-center  centraliza texto
      ============================================================ -->
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,32 +46,33 @@
     <meta name="x-apple-disable-message-reformatting">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>{% block title %}Éluxo Modas{% endblock %}</title>
+    <title>{% block title %}Gama Fashion - Moda Fitness{% endblock %}</title>
 
     <!--[if mso]>
     <noscript>
         <xml>
             <o:OfficeDocumentSettings>
+                <o:AllowPNG/>
                 <o:PixelsPerInch>96</o:PixelsPerInch>
             </o:OfficeDocumentSettings>
         </xml>
     </noscript>
     <![endif]-->
-
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&family=Parisienne&display=swap" rel="stylesheet">
+    <!-- Sem Google Fonts: a requisição exporia o IP do cliente ao Google a cada abertura (LGPD). Fallbacks: Didot/Georgia. -->
 
     <style>
         /* ── Reset ─────────────────────────────────────────────── */
         * { box-sizing: border-box; }
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
         img { -ms-interpolation-mode: bicubic; border: 0; display: block; outline: none; text-decoration: none; }
+        a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
         body {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            background-color: #fbf3ea;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background-color: #f8f1f3;
         }
 
         /* ── Preheader ─────────────────────────────────────────── */
@@ -79,56 +90,59 @@
 
         /* ── Wrapper ───────────────────────────────────────────── */
         .email-wrapper {
-            background-color: #fbf3ea;
-            background-image:
-                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168,90,118,0.10), transparent),
-                radial-gradient(ellipse 60% 40% at 100% 0%, rgba(217,186,121,0.10), transparent);
+            background-color: #f8f1f3;
             width: 100%;
-            padding: 48px 16px;
+            padding: 56px 20px;
         }
 
-        /* ── Card ──────────────────────────────────────────────── */
+        /* ── Card (moldura dupla) ──────────────────────────────── */
         .email-card {
-            background-color: #fffdfb;
-            border: 1px solid #ead9c0;
-            border-radius: 14px;
-            overflow: hidden;
+            background-color: #fffcfc;
+            border: 1px solid #d9bfca;
+            border-radius: 3px;
+            overflow: visible;
             max-width: 600px;
             width: 100%;
             margin: 0 auto;
-            box-shadow: 0 24px 60px rgba(90,60,40,0.14);
+            text-align: left;
+            box-shadow: 0 0 0 6px #f8f1f3, 0 0 0 7px #e0c8d2, 0 28px 60px rgba(45,15,58,0.14);
         }
 
         /* ── Header ────────────────────────────────────────────── */
         .header {
-            background: #fffdfb;
-            border-bottom: 1px solid #ead9c0;
-            padding: 36px 40px 28px;
+            background-color: #3a1348;
+            border-bottom: 4px solid #8e1b3f;
+            padding: 14px;
             text-align: center;
+        }
+
+        .header-frame {
+            border: 1px solid rgba(217,165,181,0.45);
+            padding: 36px 24px 32px;
         }
 
         .logo-badge {
             display: inline-block;
-            width: 52px;
-            height: 52px;
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
-            background: #f6e9dc;
-            border: 1px solid rgba(217,186,121,0.6);
-            margin: 0 auto 16px;
-            line-height: 50px;
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-weight: 700;
-            font-size: 24px;
-            color: #a85a76;
+            border: 3px double #d9a5b5;
+            margin: 0 auto 18px;
+            line-height: 52px;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-weight: 400;
+            font-style: italic;
+            font-size: 30px;
+            color: #f3dce4;
             text-align: center;
         }
 
         .logo-title {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-weight: 600;
-            font-size: 12px;
-            color: #b08a3e;
-            letter-spacing: 3px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-weight: 400;
+            font-size: 11px;
+            color: #d9a5b5;
+            letter-spacing: 8px;
             text-transform: uppercase;
             margin: 0;
             line-height: 1.4;
@@ -136,189 +150,231 @@
 
         .logo-title-main {
             display: block;
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-weight: 600;
-            font-size: 24px;
-            color: #3a2e24;
-            letter-spacing: 2px;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-weight: 400;
+            font-size: 36px;
+            color: #ffffff;
+            letter-spacing: 7px;
             text-transform: uppercase;
-            margin: 4px 0 0;
+            margin: 6px 0 0;
+            line-height: 1.1;
+        }
+
+        .ornament {
+            margin: 18px auto 0;
+        }
+
+        .ornament td {
+            vertical-align: middle;
+            padding: 0;
+        }
+
+        .ornament .orn-line {
+            width: 54px;
+            height: 1px;
+            font-size: 0;
+            line-height: 0;
+            border-top: 1px solid rgba(217,165,181,0.55);
+        }
+
+        .ornament .orn-gem {
+            padding: 0 12px;
+            font-size: 9px;
+            line-height: 1;
+            color: #d9a5b5;
         }
 
         .header-tagline {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 10px;
-            font-weight: 500;
-            color: #8a7860;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 14px;
+            font-style: italic;
+            font-weight: 400;
+            color: #e9c9d3;
             letter-spacing: 3px;
-            text-transform: uppercase;
-            margin: 12px 0 0;
-        }
-
-        .header-stripe {
-            display: block;
-            width: 44px;
-            height: 2px;
-            background: linear-gradient(90deg, #a85a76, #d9ba79 60%, transparent);
-            margin: 20px auto 0;
+            margin: 14px 0 0;
         }
 
         /* ── Body ──────────────────────────────────────────────── */
         .body-cell {
-            padding: 40px 40px 44px;
-            background-color: #fffdfb;
+            padding: 48px 44px 50px;
+            background-color: #fffcfc;
         }
+
+        .text-center { text-align: center !important; }
+
+        /* filete vinho curto — opt-in, abaixo de .heading */
+        .rule {
+            width: 44px;
+            height: 2px;
+            background: #8e1b3f;
+            margin: -8px 0 24px;
+            font-size: 0;
+            line-height: 0;
+        }
+        .text-center .rule, .rule.center { margin-left: auto; margin-right: auto; }
 
         /* ── Content blocks (usados pelos templates filhos) ────── */
         .section-label {
             display: inline-block;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 11px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
             font-weight: 600;
-            color: #a85a76;
-            background: rgba(168,90,118,0.10);
-            border: 1px solid rgba(168,90,118,0.28);
-            padding: 5px 14px;
-            border-radius: 20px;
-            letter-spacing: 2px;
+            color: #6b2d83;
+            background: transparent;
+            border: 1px solid #d9bfca;
+            padding: 6px 16px;
+            border-radius: 2px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            margin: 0 0 18px;
+            margin: 0 0 20px;
         }
 
         .section-label.gold {
-            color: #b08a3e;
-            background: rgba(217,186,121,0.14);
-            border-color: rgba(217,186,121,0.35);
+            color: #8e1b3f;
+            background: transparent;
+            border-color: rgba(142,27,63,0.40);
         }
 
         .heading {
-            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 28px;
-            font-weight: 600;
-            color: #3a2e24;
+            font-weight: 400;
+            color: #2d0f3a;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0 0 22px;
+            letter-spacing: 3px;
+            margin: 0 0 24px;
             line-height: 1.3;
         }
 
         .greeting {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 15px;
-            color: #4a3b2c;
-            margin: 0 0 10px;
-            line-height: 1.7;
-        }
-
-        .greeting strong {
-            color: #a85a76;
-        }
-
-        .body-text {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 15px;
-            color: #6b5b4e;
-            margin: 0 0 28px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
+            color: #46283f;
+            margin: 0 0 12px;
             line-height: 1.75;
         }
 
+        .greeting strong {
+            color: #8e1b3f;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        .body-text {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 15px;
+            color: #66505d;
+            margin: 0 0 30px;
+            line-height: 1.85;
+        }
+
         .body-text strong {
-            color: #4a3b2c;
+            color: #46283f;
+        }
+
+        .greeting a, .body-text a {
+            color: #8e1b3f;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(142,27,63,0.35);
         }
 
         .info-box {
-            background: #f6e9dc;
-            border: 1px solid #ead9c0;
-            border-left: 3px solid #a85a76;
-            border-radius: 10px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
+            background: #f6ecef;
+            border: 1px solid #e8d6dd;
+            border-left: 3px solid #6b2d83;
+            border-radius: 2px;
+            padding: 22px 26px;
+            margin-bottom: 26px;
         }
 
         .info-box.gold {
-            border-left-color: #d9ba79;
+            border-left-color: #8e1b3f;
         }
 
         .info-box.plain {
-            border-left: 1px solid #ead9c0;
+            border-left: 1px solid #e8d6dd;
         }
 
         .info-box-title {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 11px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
             font-weight: 600;
-            color: #3a2e24;
-            letter-spacing: 1.5px;
+            color: #2d0f3a;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            margin: 0 0 10px;
+            margin: 0 0 12px;
         }
 
         .info-box-text {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 14px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0;
-            line-height: 1.8;
+            line-height: 1.9;
         }
 
         .info-box-text strong {
-            color: #4a3b2c;
+            color: #46283f;
             font-weight: 600;
         }
 
         .info-box-text a {
-            color: #a85a76;
+            color: #8e1b3f;
             text-decoration: none;
+            border-bottom: 1px solid rgba(142,27,63,0.35);
         }
 
         .cta-wrap {
             text-align: center;
-            margin: 8px 0 26px;
+            margin: 10px 0 28px;
         }
 
         .cta-btn {
             display: inline-block;
-            background: #a85a76;
-            color: #fffdfb !important;
+            background: #8e1b3f;
+            color: #ffffff !important;
             text-decoration: none !important;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 13px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 1.5px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            padding: 16px 44px;
-            border-radius: 10px;
-            box-shadow: 0 10px 24px rgba(168,90,118,0.28);
+            padding: 17px 46px;
+            border: 1px solid #721432;
+            border-radius: 2px;
+            mso-padding-alt: 0;
+            box-shadow: inset 0 0 0 3px #8e1b3f, inset 0 0 0 4px rgba(255,255,255,0.35);
         }
 
         .cta-btn-gold {
             display: inline-block;
-            background: #d9ba79;
-            color: #3a2e24 !important;
+            background: #3a1348;
+            color: #ffffff !important;
             text-decoration: none !important;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 13px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 1.5px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            padding: 16px 44px;
-            border-radius: 10px;
-            box-shadow: 0 10px 24px rgba(217,186,121,0.3);
+            padding: 17px 46px;
+            border: 1px solid #2d0f3a;
+            border-radius: 2px;
+            box-shadow: inset 0 0 0 3px #3a1348, inset 0 0 0 4px rgba(217,165,181,0.5);
         }
 
         .cta-btn-secondary {
             display: inline-block;
             background: transparent;
-            color: #6b5b4e !important;
+            color: #6b2d83 !important;
             text-decoration: none !important;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 12px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 1.5px;
+            letter-spacing: 3px;
             text-transform: uppercase;
             padding: 14px 32px;
-            border-radius: 10px;
-            border: 1px solid #dcc7a3;
+            border-radius: 2px;
+            border: 1px solid #d9bfca;
             margin-top: 10px;
         }
 
@@ -328,114 +384,137 @@
         }
 
         .link-fallback p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: italic;
             font-size: 12px;
-            color: #a6957f;
+            color: #7d6a76;
             margin: 0 0 8px;
         }
 
         .link-fallback a {
             display: inline-block;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
             font-size: 12px;
-            color: #a85a76;
-            background: #f6e9dc;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
+            color: #6b2d83;
+            background: #f6ecef;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
             padding: 10px 16px;
             word-break: break-all;
             text-decoration: none;
         }
 
         .warning-box {
-            background: #f6e9dc;
-            border: 1px solid #ead9c0;
-            border-radius: 10px;
-            padding: 18px 22px;
+            background: #f6ecef;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
+            padding: 18px 24px;
         }
 
         .warning-box p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 13px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0;
-            line-height: 1.75;
+            line-height: 1.8;
         }
 
         .warning-box strong {
-            color: #b08a3e;
+            color: #8e1b3f;
         }
 
         .divider {
             border: none;
-            border-top: 1px solid #ead9c0;
-            margin: 28px 0 20px;
+            border-top: 1px solid #e8d6dd;
+            margin: 30px 0 22px;
         }
 
         .closing-note {
             text-align: center;
-            margin-top: 32px;
-            padding: 20px;
-            border-top: 1px solid #ead9c0;
+            margin-top: 34px;
+            padding: 24px 20px 4px;
+            border-top: 3px double #e0c8d2;
         }
 
         .closing-note p.script {
-            font-family: 'Parisienne', cursive;
-            font-size: 20px;
-            color: #a85a76;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 21px;
+            color: #8e1b3f;
             margin: 0;
         }
 
         .closing-note p.team {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            letter-spacing: 1px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            color: #a6957f;
-            margin: 10px 0 0;
+            color: #7d6a76;
+            margin: 12px 0 0;
         }
 
         /* ── Footer ────────────────────────────────────────────── */
         .footer {
-            background: #fbf3ea;
-            border-top: 1px solid #ead9c0;
-            padding: 30px 40px;
+            background: #2d0f3a;
+            border-top: 4px solid #8e1b3f;
+            padding: 14px;
             text-align: center;
         }
 
+        .footer-frame {
+            border: 1px solid rgba(217,165,181,0.35);
+            padding: 32px 28px 26px;
+        }
+
         .footer-logo {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 15px;
-            font-weight: 600;
-            color: #3a2e24;
-            letter-spacing: 2px;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: #ffffff;
+            letter-spacing: 6px;
             text-transform: uppercase;
             margin: 0;
         }
 
-        .footer-logo span { color: #b08a3e; }
+        .footer-logo span { color: #d9a5b5; }
 
         .footer-tagline {
-            font-family: 'Parisienne', cursive;
-            font-size: 15px;
-            color: #a85a76;
-            margin: 8px 0 0;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 14px;
+            font-style: italic;
+            color: #e9c9d3;
+            letter-spacing: 1px;
+            margin: 10px 0 0;
         }
 
-        .footer-divider {
-            width: 32px;
-            height: 1px;
-            background: #ead9c0;
-            margin: 18px auto;
-            border: none;
+        .footer-links {
+            margin: 0;
+            font-size: 0;
+        }
+
+        .footer-links a {
+            display: inline-block;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            color: #f3dce4 !important;
+            text-decoration: none !important;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            margin: 0 2px 10px;
+            border-bottom: 1px solid rgba(217,165,181,0.5);
         }
 
         .footer-auto {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            color: #c3b39c;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            color: #b595c3;
             margin: 0;
-            letter-spacing: 0.5px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.8;
         }
 
         /* ── Shared widgets (usados por vários templates filhos) ── */
@@ -447,85 +526,91 @@
         }
 
         .detail-item {
-            background: #fffdfb;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
-            padding: 14px 16px;
+            background: #fffcfc;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
+            padding: 16px 16px;
             text-align: center;
         }
 
         .detail-item .label {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 10px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 9px;
             font-weight: 600;
-            color: #a6957f;
+            color: #7d6a76;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2.5px;
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .detail-item .value {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 15px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
             font-weight: 600;
-            color: #4a3b2c;
+            color: #2d0f3a;
             display: block;
         }
 
         .detail-item .value.price {
-            color: #a85a76;
+            color: #8e1b3f;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 14px;
-            border-radius: 50px;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 12px;
+            padding: 5px 14px;
+            border-radius: 2px;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
             font-weight: 600;
-            background: rgba(217,186,121,0.16);
-            color: #b08a3e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: rgba(107,45,131,0.10);
+            border: 1px solid rgba(107,45,131,0.30);
+            color: #6b2d83;
         }
 
+        /* cancelado: cinza para não se confundir com o vinho da marca */
         .status-badge.cancelled {
-            background: rgba(196,68,68,0.12);
-            color: #b23e3e;
+            background: rgba(90,80,100,0.10);
+            border-color: rgba(90,80,100,0.30);
+            color: #5a5064;
         }
 
         .status-badge.success {
-            background: rgba(58,138,90,0.12);
+            background: rgba(58,138,90,0.10);
+            border-color: rgba(58,138,90,0.30);
             color: #2f7a4f;
         }
 
         .service-name {
-            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 20px;
-            font-weight: 600;
-            color: #3a2e24;
+            font-weight: 400;
+            color: #2d0f3a;
             margin: 0 0 8px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 2px;
         }
 
         .service-description {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 14px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0 0 14px;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
         .service-image {
             width: 100%;
             max-width: 220px;
             height: auto;
-            border-radius: 8px;
+            border-radius: 2px;
             margin: 0 0 16px;
-            border: 1px solid #ead9c0;
+            border: 1px solid #e8d6dd;
+            padding: 4px;
+            background: #fffcfc;
         }
-
-       
 
         .client-info {
             display: flex;
@@ -537,112 +622,113 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: #f6e9dc;
-            border: 1px solid rgba(168,90,118,0.35);
-            color: #a85a76;
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 18px;
-            font-weight: 700;
+            background: #f6ecef;
+            border: 3px double #d9bfca;
+            color: #6b2d83;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 19px;
+            font-style: italic;
+            font-weight: 400;
             text-align: center;
-            line-height: 44px;
+            line-height: 38px;
         }
 
         .client-name {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 15px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
             font-weight: 600;
-            color: #4a3b2c;
+            color: #2d0f3a;
             margin: 0;
         }
 
         .notes-box {
-            background: #fbf3ea;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
-            padding: 12px 16px;
+            background: #f8f1f3;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
+            padding: 14px 18px;
             margin-top: 14px;
         }
 
         .notes-box p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 13px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .reason-box {
-            background: #fbf3ea;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
+            background: #f8f1f3;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
             padding: 16px 20px;
             margin-top: 14px;
         }
 
         .reason-box p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 14px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
-        .reason-box strong { color: #4a3b2c; }
+        .reason-box strong { color: #2d0f3a; }
 
         .highlight-badge {
             display: inline-block;
-            background: rgba(217,186,121,0.16);
-            border: 1px solid rgba(217,186,121,0.4);
-            color: #b08a3e !important;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 12px;
+            background: transparent;
+            border: 1px solid rgba(142,27,63,0.45);
+            color: #8e1b3f !important;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
             font-weight: 600;
             padding: 8px 20px;
-            border-radius: 50px;
-            letter-spacing: 1.5px;
+            border-radius: 2px;
+            letter-spacing: 3px;
             text-transform: uppercase;
         }
 
         .stars {
             text-align: center;
-            font-size: 30px;
-            letter-spacing: 4px;
-            color: #d9ba79;
+            font-size: 28px;
+            letter-spacing: 6px;
+            color: #8e1b3f;
             margin: 6px 0 14px;
         }
 
         .message-box {
-            background: #fbf3ea;
-            border: 1px solid #ead9c0;
-            border-left: 3px solid #d9ba79;
-            border-radius: 10px;
-            padding: 18px 22px;
-            margin-bottom: 24px;
+            background: #f8f1f3;
+            border: 1px solid #e8d6dd;
+            border-left: 3px solid #8e1b3f;
+            border-radius: 2px;
+            padding: 20px 24px;
+            margin-bottom: 26px;
         }
 
         .message-box p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            color: #6b5b4e;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 16px;
+            color: #66505d;
             font-style: italic;
             margin: 0;
-            line-height: 1.75;
+            line-height: 1.8;
         }
 
         .action-box {
-            background: #f6e9dc;
-            border: 1px solid rgba(168,90,118,0.22);
-            border-radius: 10px;
-            padding: 20px 24px;
+            background: #f6ecef;
+            border: 1px solid #e0c8d2;
+            border-radius: 2px;
+            padding: 22px 26px;
             margin-bottom: 8px;
         }
 
         .action-box p {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 14px;
-            color: #8a7860;
+            color: #66505d;
             margin: 0;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
         .feature-grid {
@@ -652,10 +738,10 @@
         }
 
         .feature-item {
-            background: #fbf3ea;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
-            padding: 16px 14px;
+            background: #f8f1f3;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
+            padding: 18px 14px;
             text-align: center;
         }
 
@@ -667,18 +753,19 @@
 
         .feature-item .label {
             display: block;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 13px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 14px;
             font-weight: 600;
-            color: #4a3b2c;
+            color: #2d0f3a;
             margin-bottom: 4px;
         }
 
         .feature-item .desc {
             display: block;
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            color: #a6957f;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 12px;
+            font-style: italic;
+            color: #7d6a76;
             line-height: 1.5;
         }
 
@@ -687,57 +774,59 @@
             font-family: 'Courier New', monospace;
             font-size: 18px;
             font-weight: 700;
-            letter-spacing: 2px;
-            color: #b08a3e;
-            background: #fbf3ea;
-            border: 1px dashed rgba(217,186,121,0.5);
-            border-radius: 8px;
-            padding: 10px 22px;
+            letter-spacing: 3px;
+            color: #8e1b3f;
+            background: #f8f1f3;
+            border: 3px double #d9bfca;
+            border-radius: 2px;
+            padding: 10px 24px;
         }
 
         .payment-row {
-            padding: 10px 0;
-            border-bottom: 1px solid #ead9c0;
+            padding: 12px 0;
+            border-bottom: 1px solid #e8d6dd;
         }
 
         .payment-row:last-child { border-bottom: none; }
 
         .payment-label {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 13px;
-            color: #8a7860;
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #7d6a76;
         }
 
         .payment-value {
-            font-family: 'Jost', Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            color: #4a3b2c;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 15px;
+            color: #2d0f3a;
             font-weight: 600;
         }
 
         .payment-value.amount {
-            font-size: 24px;
-            color: #a85a76;
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-weight: 700;
+            font-size: 28px;
+            color: #8e1b3f;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-weight: 400;
         }
 
         .pix-section {
-            background: #fbf3ea;
-            border: 1px dashed rgba(217,186,121,0.5);
-            border-radius: 10px;
-            padding: 24px;
-            margin: 18px 0 24px;
+            background: #f8f1f3;
+            border: 3px double #d9bfca;
+            border-radius: 2px;
+            padding: 26px;
+            margin: 20px 0 26px;
             text-align: center;
         }
 
         .pix-section h3 {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 18px;
-            font-weight: 600;
+            font-family: 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-size: 17px;
+            font-weight: 400;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #b08a3e;
+            letter-spacing: 3px;
+            color: #6b2d83;
             margin: 0 0 14px;
         }
 
@@ -749,35 +838,34 @@
         .qr-code-container img {
             max-width: 180px;
             height: auto;
-            border: 1px solid #ead9c0;
-            border-radius: 10px;
+            border: 1px solid #e0c8d2;
+            border-radius: 2px;
             padding: 12px;
-            background-color: #fffdfb;
+            background-color: #ffffff;
             margin: 0 auto;
         }
 
         .pix-copy-area {
-            background: #f6e9dc;
-            border: 1px solid #ead9c0;
-            border-radius: 8px;
+            background: #f6ecef;
+            border: 1px solid #e8d6dd;
+            border-radius: 2px;
             padding: 12px 16px;
             margin: 12px 0 8px;
             word-break: break-all;
             font-family: 'Courier New', monospace;
             font-size: 13px;
-            color: #6b5b4e;
+            color: #66505d;
         }
 
         /* ── Mobile ────────────────────────────────────────────── */
         @media only screen and (max-width: 600px) {
-            .email-wrapper { padding: 20px 10px !important; }
-            .email-card { border-radius: 12px !important; }
-            .header { padding: 28px 22px 22px !important; }
-            .logo-title-main { font-size: 20px !important; }
-            .body-cell { padding: 26px 22px 30px !important; }
-            .heading { font-size: 23px !important; }
-            .cta-btn, .cta-btn-gold, .cta-btn-secondary { display: block !important; padding: 16px 20px !important; margin-left: 0 !important; margin-top: 10px; }
-            .footer { padding: 24px 22px !important; }
+            .email-wrapper { padding: 28px 14px !important; }
+            .header-frame { padding: 28px 16px 24px !important; }
+            .logo-title-main { font-size: 28px !important; letter-spacing: 4px !important; }
+            .body-cell { padding: 32px 22px 36px !important; }
+            .heading { font-size: 22px !important; letter-spacing: 2px !important; }
+            .cta-btn, .cta-btn-gold, .cta-btn-secondary { display: block !important; text-align: center; padding: 16px 20px !important; margin-left: 0 !important; margin-top: 10px; }
+            .footer-frame { padding: 26px 16px 20px !important; }
             .detail-grid, .feature-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
             .detail-item, .feature-item { padding: 12px 8px; }
         }
@@ -788,17 +876,32 @@
 
 <body>
 
-<span class="preheader">{% block preheader %}Éluxo Modas{% endblock %}</span>
+<span class="preheader">{% block preheader %}Gama Fashion - Moda Fitness{% endblock %}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
 
-<div class="email-wrapper">
+<!-- Wrapper em tabela: centraliza e limita a 600px também no Outlook desktop -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f8f1f3" style="background-color:#f8f1f3;">
+<tr>
+<td align="center" class="email-wrapper" bgcolor="#f8f1f3">
+<!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+
     <div class="email-card">
 
         <!-- ── HEADER ─────────────────────────────────────────── -->
-        <div class="header">
-            <div class="logo-badge">É</div>
-            <p class="logo-title">Éluxo<span class="logo-title-main">Modas</span></p>
-            <p class="header-tagline">Feminina &amp; Masculina</p>
-            <span class="header-stripe"></span>
+        <div class="header" style="background-color:#3a1348;">
+            <div class="header-frame">
+                <div class="logo-badge">G</div>
+                <p class="logo-title">Gama<span class="logo-title-main">Fashion</span></p>
+
+                <table role="presentation" class="ornament" align="center" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td class="orn-line">&nbsp;</td>
+                        <td class="orn-gem">&#9670;</td>
+                        <td class="orn-line">&nbsp;</td>
+                    </tr>
+                </table>
+
+                <p class="header-tagline">Moda Fitness</p>
+            </div>
         </div>
 
         <!-- ── BODY (child template) ──────────────────────────── -->
@@ -807,15 +910,31 @@
         </div>
 
         <!-- ── FOOTER ─────────────────────────────────────────── -->
-        <div class="footer">
-            <p class="footer-logo">Éluxo <span>Modas</span></p>
-            <p class="footer-tagline">Estilo que veste quem você ama</p>
-            <hr class="footer-divider">
-            <p class="footer-auto">Mensagem automática. Não responda este e-mail.</p>
+        <div class="footer" style="background-color:#2d0f3a;">
+            <div class="footer-frame">
+                <p class="footer-logo">Gama <span>Fashion</span></p>
+                <p class="footer-tagline">Moda Fitness &mdash; elegância em movimento</p>
+
+                <table role="presentation" class="ornament" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto;">
+                    <tr>
+                        <td class="orn-line">&nbsp;</td>
+                        <td class="orn-gem">&#9670;</td>
+                        <td class="orn-line">&nbsp;</td>
+                    </tr>
+                </table>
+
+                <div class="footer-links">{% block footer_links %}{% endblock %}</div>
+
+                <p class="footer-auto">Mensagem automática &middot; Não responda este e-mail<br>&copy; {% now "Y" %} Gama Fashion</p>
+            </div>
         </div>
 
     </div>
-</div>
+
+<!--[if mso]></td></tr></table><![endif]-->
+</td>
+</tr>
+</table>
 
 </body>
 </html>

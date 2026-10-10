@@ -36,12 +36,14 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
 )
 
 api = NinjaAPI(
-    title="ÉLUXO MODAS API",
+    title="Gama Fashion - Moda Fitness",
     version="1.0.0",
-    description="E-commerce de moda masculina e feminina.",
+    description="E-commerce de moda Fitness masculina e feminina.",
     auth=[JWTAuth(), AdminOnlyAuth(), ClientOnlyAuth(), VerifiedUserAuth(), ActiveUserAuth()],
     urls_namespace="api",
     docs=Swagger(settings={"persistAuthorization": True}),
+    docs_url="/docs" if settings.API_DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if settings.API_DOCS_ENABLED else None,
 )
 
 

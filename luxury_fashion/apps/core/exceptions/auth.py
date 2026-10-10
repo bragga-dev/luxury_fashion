@@ -29,3 +29,9 @@ class SessionNotFound(Exception):
     def __init__(self, message=None):
         self.message = message or _("Sessão não encontrada.")
         super().__init__(self.message)
+
+
+class TermsNotAccepted(Exception):
+    def __init__(self, message=None):
+        self.message = message or _("É necessário aceitar os Termos de Uso e a Política de Privacidade para criar a conta.")
+        super().__init__(self.message)

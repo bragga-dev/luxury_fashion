@@ -46,3 +46,22 @@ def set_refresh_cookie(response: HttpResponse, refresh_token: str) -> None:
 
 def clear_refresh_cookie(response: HttpResponse) -> None:
     response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
+
+
+def has_trusted_origin(request) -> bool:
+    """
+    Defesa CSRF para os endpoints que consomem o cookie do refresh (/refresh e /logout).
+
+    Browsers sempre mandam `Origin` em POST cross-site. Se vier e não for do mesmo host nem
+    de uma origem confiável (CORS_ALLOWED_ORIGINS / CSRF_TRUSTED_ORIGINS), recusamos — isso
+    fecha o CSRF mesmo com SameSite=None (front em outro domínio). Sem `Origin` (cliente não
+    browser) aceitamos: quem não é browser não pode ser usado como vetor de CSRF.
+    """
+    origin = request.headers.get("Origin")
+    if not origin:
+        return True
+    origin = origin.rstrip("/")
+    if origin == f"{request.scheme}://{request.get_host()}":
+        return True
+    trusted = {o.rstrip("/") for o in (*getattr(settings, "CORS_ALLOWED_ORIGINS", []), *getattr(settings, "CSRF_TRUSTED_ORIGINS", []))}
+    return origin in trusted

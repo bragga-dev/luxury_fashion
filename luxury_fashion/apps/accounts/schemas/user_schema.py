@@ -26,6 +26,17 @@ class RegisterIn(Schema):
     email:     EmailStr
     password:  str = Field(..., min_length=8)
     password2: str = Field(..., min_length=8)
+    # Aceite OBRIGATÓRIO dos Termos de Uso e da Política de Privacidade (LGPD: consentimento
+    # não pode ser presumido). O marketing é opt-in separado e opcional.
+    accepted_terms: bool
+    marketing_opt_in: bool = False
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def terms_must_be_accepted(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError("É necessário aceitar os Termos de Uso e a Política de Privacidade.")
+        return v
 
     @field_validator("password")
     @classmethod
@@ -54,6 +65,9 @@ class GoogleLoginIn(Schema):
     no frontend após o usuário se autenticar com a conta Google.
     """
     id_token: str = Field(..., min_length=10)
+    # Só é exigido quando o login cria uma conta nova (usuário que ainda não existe).
+    accepted_terms: bool = False
+    marketing_opt_in: bool = False
 
 
 class TokenOut(Schema):
@@ -206,3 +220,28 @@ class SessionOut(Schema):
 
 class MessageOut(Schema):
     detail: str
+
+
+class ConsentOut(Schema):
+    terms_accepted: bool
+    terms_version_accepted: str
+    privacy_version_accepted: str
+    terms_accepted_at: Optional[datetime] = None
+    current_terms_version: str
+    current_privacy_version: str
+    needs_reacceptance: bool
+    marketing_opt_in: bool
+    marketing_opt_in_at: Optional[datetime] = None
+
+
+class ConsentUpdateIn(Schema):
+    """Só `accepted_terms=true` é aceito (aceite não se "desfaz" aqui: pra revogar, exclua a conta)."""
+    accepted_terms: Optional[bool] = None
+    marketing_opt_in: Optional[bool] = None
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def only_true(cls, v):
+        if v is False:
+            raise ValueError("Não é possível revogar o aceite dos termos por aqui; para isso, exclua a conta.")
+        return v

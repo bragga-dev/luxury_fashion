@@ -226,6 +226,17 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 COOKIE_SAMESITE = env("COOKIE_SAMESITE", default="Lax")
 COOKIE_SECURE = env.bool("COOKIE_SECURE", default=not DEBUG)
 
+# Versões dos documentos legais vigentes. O cadastro grava qual versão o usuário aceitou;
+# ao publicar uma nova versão, troque aqui (o front pede novo aceite via GET /auth/consents).
+LEGAL_TERMS_VERSION = env("LEGAL_TERMS_VERSION", default="1.0")
+LEGAL_PRIVACY_VERSION = env("LEGAL_PRIVACY_VERSION", default="1.0")
+
+# Swagger/OpenAPI: ligados por padrão só em DEBUG (o prod.py desliga).
+API_DOCS_ENABLED = env.bool("API_DOCS_ENABLED", default=DEBUG)
+
+# Caminho do Django admin. Em produção troque por algo não óbvio (ex.: ADMIN_URL=painel-x9k2/).
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
 
 # =========================================================
 # REDIS
