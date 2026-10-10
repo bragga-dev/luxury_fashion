@@ -8,8 +8,13 @@ from ninja import Router, Status
 from django_ratelimit.decorators import ratelimit
 
 from luxury_fashion.apps.accounts.models.user_model import User
-from luxury_fashion.apps.core.exceptions import EmptyCart, OrderNotFound, OrderNotPayable, UserNotFound
-from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
+from luxury_fashion.apps.core.exceptions import EmptyCart, OrderNotFound, OrderNotPayable, ShippingNotFound, UserNotFound
+from luxury_fashion.apps.core.exceptions.cart_exception import (
+    CartPriceChanged,
+    InsufficientStock,
+    ProductUnavailable,
+    ShippingOptionUnavailable,
+)
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
 from luxury_fashion.apps.core.exceptions.shipping import (
     FrenetAPIError,
@@ -34,9 +39,14 @@ router = Router()
 
 @router.post(
     "",
-    response={201: OrderOut, 400: MessageOut, 403: MessageOut, 404: MessageOut, 409: MessageOut},
+    response={201: OrderOut, 400: MessageOut, 403: MessageOut, 404: MessageOut, 409: MessageOut, 502: MessageOut},
     auth=ClientCompleteProfileAuth(),
     summary="Faz o checkout do carrinho e cria um pedido",
+    description=(
+        "Valida disponibilidade e preços (sem mexer no estoque — ele é debitado quando o pagamento "
+        "é efetivado), recota o frete pro CEP do endereço de entrega com o `shipping_service_code` "
+        "escolhido e grava preço, serviço e prazo no pedido."
+    ),
 )
 @ratelimit(key="user", rate="10/m", block=True)
 def create_order_router(request, payload: OrderCreateIn):
@@ -49,8 +59,16 @@ def create_order_router(request, payload: OrderCreateIn):
         return Status(403, {"detail": str(e)})
     except EmptyCart as e:
         return Status(400, {"detail": str(e)})
-    except InsufficientStock as e:
+    except (
+        InsufficientStock,
+        ProductUnavailable,
+        CartPriceChanged,
+        ShippingOptionUnavailable,
+        ShippingNotFound,
+    ) as e:
         return Status(409, {"detail": str(e)})
+    except FrenetAPIError as e:
+        return Status(502, {"detail": str(e)})
 
 
 @router.get(

@@ -20,7 +20,7 @@ from luxury_fashion.apps.cart.selectors.cart_item_selector import (
     get_item_by_variant,
 )
 from luxury_fashion.apps.cart.selectors.cart_selector import get_cart_by_user_id
-from luxury_fashion.apps.core.exceptions.cart_exception import CartItemNotFound, InsufficientStock
+from luxury_fashion.apps.core.exceptions.cart_exception import CartItemNotFound, InsufficientStock, ProductUnavailable
 from luxury_fashion.apps.core.exceptions.products_exception import VariantNotFound
 from luxury_fashion.apps.products.selectors.product_variant_selector import get_variant_by_id
 
@@ -44,6 +44,9 @@ def add_item_to_cart(user_id: uuid.UUID, data: CartItemCreateIn) -> CartOut:
     if variant is None:
         raise VariantNotFound()
 
+    if not variant.is_active or not variant.product_id.is_active:
+        raise ProductUnavailable(f"{variant} não está disponível no momento.")
+
     existing = get_item_by_variant(cart_id=cart.cart_id, variant_id=variant.variant_id)
     new_quantity = (existing.quantity_item if existing else 0) + data.quantity_item
 
@@ -61,6 +64,9 @@ def add_item_to_cart(user_id: uuid.UUID, data: CartItemCreateIn) -> CartOut:
 def update_cart_item_quantity(user_id: uuid.UUID, cart_item_id: uuid.UUID, quantity: int) -> CartOut:
     cart = get_or_create_cart_for_user(user_id=user_id)
     item = _get_cart_item_or_raise(cart_item_id=cart_item_id, cart_id=cart.cart_id)
+
+    if not item.variant_id.is_active or not item.variant_id.product_id.is_active:
+        raise ProductUnavailable(f"{item.variant_id} não está disponível no momento.")
 
     if quantity > item.variant_id.stock:
         raise InsufficientStock()

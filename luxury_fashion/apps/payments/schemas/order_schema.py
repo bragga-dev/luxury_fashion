@@ -27,7 +27,9 @@ class OrderCreateIn(Schema):
     nome de outro usuário.
     """
     shipping_address_id: uuid.UUID
-    shipping_service_code: Optional[str] = None
+    # Obrigatório: opção escolhida na cotação (`POST /cart/shipping/quote`). O preço NÃO vem
+    # do cliente — o backend recota pro CEP do endereço de entrega e grava o valor retornado.
+    shipping_service_code: str
 
 
 class OrderCancelIn(Schema):
@@ -45,6 +47,8 @@ class OrderOut(Schema):
     total_geral: Decimal
     shipping_address_id: uuid.UUID
     shipping_service_code: Optional[str] = None
+    shipping_service_name: Optional[str] = None
+    shipping_delivery_days: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -62,6 +66,8 @@ class OrderOut(Schema):
             total_geral=order.total_geral,
             shipping_address_id=order.shipping_address_id,
             shipping_service_code=order.shipping_service_code,
+            shipping_service_name=order.shipping_service_name,
+            shipping_delivery_days=order.shipping_delivery_days,
             created_at=order.created_at,
             updated_at=order.updated_at,
         )

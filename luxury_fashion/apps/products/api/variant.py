@@ -9,7 +9,7 @@ import uuid
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import Router, Status
 
 from luxury_fashion.apps.core.exceptions import (
     ProductNotFound,
@@ -59,7 +59,7 @@ router = Router()
 )
 @ratelimit(key="user", rate="60/m", block=True)
 def list_variants_router(request, product_id: uuid.UUID, active_only: bool = False):
-    return 200, list_variants_for_all(product_id, active_only=active_only)
+    return Status(200, list_variants_for_all(product_id, active_only=active_only))
 
 
 # ── Escrita (admin) ────────────────────────────────────────────────────────────
@@ -73,13 +73,13 @@ def list_variants_router(request, product_id: uuid.UUID, active_only: bool = Fal
 @ratelimit(key="user", rate="30/h", block=True)
 def create_variant_router(request, product_id: uuid.UUID, payload: VariantCreateIn):
     try:
-        return 201, create_variant_for_admin(product_id, payload)
+        return Status(201, create_variant_for_admin(product_id, payload))
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except VariantAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.patch(
@@ -91,13 +91,13 @@ def create_variant_router(request, product_id: uuid.UUID, payload: VariantCreate
 @ratelimit(key="user", rate="30/h", block=True)
 def update_variant_router(request, variant_id: uuid.UUID, payload: VariantUpdateIn):
     try:
-        return 200, update_variant_for_admin(variant_id, payload)
+        return Status(200, update_variant_for_admin(variant_id, payload))
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except VariantAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.delete(
@@ -110,9 +110,9 @@ def update_variant_router(request, variant_id: uuid.UUID, payload: VariantUpdate
 def delete_variant_router(request, variant_id: uuid.UUID):
     try:
         delete_variant_for_admin(variant_id)
-        return 200, {"detail": "Variante excluída com sucesso."}
+        return Status(200, {"detail": "Variante excluída com sucesso."})
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -124,9 +124,9 @@ def delete_variant_router(request, variant_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def activate_variant_router(request, variant_id: uuid.UUID):
     try:
-        return 200, activate_variant_for_admin(variant_id)
+        return Status(200, activate_variant_for_admin(variant_id))
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -138,9 +138,9 @@ def activate_variant_router(request, variant_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def deactivate_variant_router(request, variant_id: uuid.UUID):
     try:
-        return 200, deactivate_variant_for_admin(variant_id)
+        return Status(200, deactivate_variant_for_admin(variant_id))
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -152,11 +152,11 @@ def deactivate_variant_router(request, variant_id: uuid.UUID):
 @ratelimit(key="user", rate="60/h", block=True)
 def set_variant_stock_router(request, variant_id: uuid.UUID, stock: int):
     try:
-        return 200, set_variant_stock_for_admin(variant_id, stock)
+        return Status(200, set_variant_stock_for_admin(variant_id, stock))
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except InsufficientStock as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
 
 
 # ── Embalagem / dados de frete da variante (admin) ─────────────────────────────
@@ -170,9 +170,9 @@ def set_variant_stock_router(request, variant_id: uuid.UUID, stock: int):
 @ratelimit(key="user", rate="60/m", block=True)
 def get_variant_shipping_router(request, variant_id: uuid.UUID):
     try:
-        return 200, get_shipping_for_all(variant_id)
+        return Status(200, get_shipping_for_all(variant_id))
     except ShippingNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -184,13 +184,13 @@ def get_variant_shipping_router(request, variant_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def create_variant_shipping_router(request, variant_id: uuid.UUID, payload: ShippingCreateIn):
     try:
-        return 201, create_shipping_for_admin(variant_id, payload)
+        return Status(201, create_shipping_for_admin(variant_id, payload))
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ShippingAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.patch(
@@ -202,8 +202,8 @@ def create_variant_shipping_router(request, variant_id: uuid.UUID, payload: Ship
 @ratelimit(key="user", rate="30/h", block=True)
 def update_variant_shipping_router(request, variant_id: uuid.UUID, payload: ShippingUpdateIn):
     try:
-        return 200, update_shipping_for_admin(variant_id, payload)
+        return Status(200, update_shipping_for_admin(variant_id, payload))
     except ShippingNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
