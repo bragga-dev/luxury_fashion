@@ -12,6 +12,11 @@ from luxury_fashion.apps.payments.models.order_model import Order
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _frete(variant_shipping, frenet_calls):
+    """Todo checkout cota o frete: embalagem cadastrada + Frenet mockada."""
+
+
 def auth_header(user) -> dict:
     token = RefreshToken.for_user(user).access_token
     return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
@@ -21,7 +26,7 @@ class TestCreateOrderEndpoint:
     def test_checkout_creates_order_and_returns_201(self, client, user, client_profile, address, cart, cart_item):
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": str(address.address_id)},
+            data={"shipping_address_id": str(address.address_id), "shipping_service_code": "04510"},
             content_type="application/json",
             **auth_header(user),
         )
@@ -33,7 +38,7 @@ class TestCreateOrderEndpoint:
     def test_requires_authentication(self, client, address):
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": str(address.address_id)},
+            data={"shipping_address_id": str(address.address_id), "shipping_service_code": "04510"},
             content_type="application/json",
         )
         assert resp.status_code == 401
@@ -42,7 +47,7 @@ class TestCreateOrderEndpoint:
         """Cliente sem CPF/endereço não passa no ClientCompleteProfileAuth (403)."""
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": "00000000-0000-0000-0000-000000000000"},
+            data={"shipping_address_id": "00000000-0000-0000-0000-000000000000", "shipping_service_code": "04510"},
             content_type="application/json",
             **auth_header(user),
         )
@@ -67,7 +72,7 @@ class TestCreateOrderEndpoint:
 
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": str(foreign_address.address_id)},
+            data={"shipping_address_id": str(foreign_address.address_id), "shipping_service_code": "04510"},
             content_type="application/json",
             **auth_header(user),
         )
@@ -76,7 +81,7 @@ class TestCreateOrderEndpoint:
     def test_returns_400_when_cart_is_empty(self, client, user, client_profile, address):
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": str(address.address_id)},
+            data={"shipping_address_id": str(address.address_id), "shipping_service_code": "04510"},
             content_type="application/json",
             **auth_header(user),
         )
@@ -89,7 +94,7 @@ class TestCreateOrderEndpoint:
 
         resp = client.post(
             "/api/orders/",
-            data={"shipping_address_id": str(address.address_id)},
+            data={"shipping_address_id": str(address.address_id), "shipping_service_code": "04510"},
             content_type="application/json",
             **auth_header(user),
         )

@@ -9,7 +9,7 @@ from luxury_fashion.apps.payments.models.payment_model import Payment
 
 pytestmark = pytest.mark.django_db
 
-WEBHOOK_URL = "/api/webhooks/asaas/"
+WEBHOOK_URL = "/api/payments/webhooks"
 
 
 class TestAsaasWebhookEndpoint:

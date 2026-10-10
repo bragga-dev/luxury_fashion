@@ -23,6 +23,9 @@ from luxury_fashion.apps.payments.services.order_shipping_service import (
 from luxury_fashion.apps.products.models.product_shipping_model import ProductShipping
 
 
+WEBHOOK_HEADERS = {"Frenet-Integration": "segredo-webhook"}
+
+
 @pytest.fixture(autouse=True)
 def frenet_settings(settings):
     settings.FRENET_PARTNER_TOKEN = "partner-token-teste"
@@ -30,6 +33,8 @@ def frenet_settings(settings):
     settings.FRENET_WHITELABEL_BASE_URL = "https://whitelabel.apifrenet.com.br"
     settings.FRENET_WEBHOOK_BASE_URL = "https://api.loja.test"
     settings.FRENET_PRINTING_FORMAT = ""
+    settings.FRENET_WEBHOOK_TOKEN_NAME = "FRENET_INTEGRATION"
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = "segredo-webhook"
 
 
 @pytest.fixture
@@ -183,7 +188,7 @@ def shipped_order(paid_order, mock_http):
 def test_webhook_status_postado(client, shipped_order):
     resp = client.post("/api/shipping/webhooks/frenet/status",
                        data={"OrderId": shipped_order.code, "ShipmentId": 12682, "ShipmentStatus": 5},
-                       content_type="application/json")
+                       content_type="application/json", headers=WEBHOOK_HEADERS)
     assert resp.status_code == 200
     shipped_order.refresh_from_db()
     assert shipped_order.shipping_status == Order.ShippingStatus.SHIPPED
@@ -194,7 +199,7 @@ def test_webhook_status_postado(client, shipped_order):
 def test_webhook_status_cancelado_libera_nova_etiqueta(client, shipped_order):
     client.post("/api/shipping/webhooks/frenet/status",
                 data={"OrderId": shipped_order.code, "ShipmentId": 12682, "ShipmentStatus": 7},
-                content_type="application/json")
+                content_type="application/json", headers=WEBHOOK_HEADERS)
     shipped_order.refresh_from_db()
     assert shipped_order.shipping_status == Order.ShippingStatus.PENDING
     assert shipped_order.frenet_order_id is None
@@ -204,7 +209,7 @@ def test_webhook_status_cancelado_libera_nova_etiqueta(client, shipped_order):
 def test_webhook_shipment_id_divergente_ignora(client, shipped_order):
     client.post("/api/shipping/webhooks/frenet/status",
                 data={"OrderId": shipped_order.code, "ShipmentId": 999, "ShipmentStatus": 5},
-                content_type="application/json")
+                content_type="application/json", headers=WEBHOOK_HEADERS)
     shipped_order.refresh_from_db()
     assert shipped_order.shipping_status == Order.ShippingStatus.LABEL_GENERATED
 
@@ -214,7 +219,7 @@ def test_webhook_token_obrigatorio_quando_configurado(client, shipped_order, set
     settings.FRENET_WEBHOOK_TOKEN_VALUE = "segredo"
     body = {"OrderId": shipped_order.code, "ShipmentId": 12682, "TrackingNumber": "AB123BR"}
     assert client.post("/api/shipping/webhooks/frenet/tracking", data=body,
-                       content_type="application/json").status_code == 401
+                       content_type="application/json", headers=WEBHOOK_HEADERS).status_code == 401
     ok = client.post("/api/shipping/webhooks/frenet/tracking", data=body,
                      content_type="application/json", HTTP_FRENET_INTEGRATION="segredo")
     assert ok.status_code == 200
@@ -226,5 +231,25 @@ def test_webhook_token_obrigatorio_quando_configurado(client, shipped_order, set
 def test_webhook_pedido_desconhecido_retorna_200(client):
     resp = client.post("/api/shipping/webhooks/frenet/status",
                        data={"OrderId": "NAOEXISTE", "ShipmentId": 1, "ShipmentStatus": 5},
-                       content_type="application/json")
+                       content_type="application/json", headers=WEBHOOK_HEADERS)
     assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_webhook_frenet_sem_token_e_recusado(client, shipped_order):
+    resp = client.post("/api/shipping/webhooks/frenet/status",
+                       data={"OrderId": shipped_order.code, "ShipmentId": 12682, "ShipmentStatus": 5},
+                       content_type="application/json")
+    assert resp.status_code == 401
+    shipped_order.refresh_from_db()
+    assert shipped_order.shipping_status != Order.ShippingStatus.SHIPPED
+
+
+@pytest.mark.django_db
+def test_webhook_frenet_sem_token_configurado_recusa_fora_do_debug(client, shipped_order, settings):
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = ""
+    settings.DEBUG = False
+    resp = client.post("/api/shipping/webhooks/frenet/status",
+                       data={"OrderId": shipped_order.code, "ShipmentId": 12682, "ShipmentStatus": 5},
+                       content_type="application/json")
+    assert resp.status_code == 401

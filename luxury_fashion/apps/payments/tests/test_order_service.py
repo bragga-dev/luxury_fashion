@@ -23,9 +23,14 @@ from luxury_fashion.apps.payments.services.order_service import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _frete(variant_shipping, frenet_calls):
+    """Todo checkout cota o frete: embalagem cadastrada + Frenet mockada."""
+
+
 class TestCreateOrderFromCart:
-    def test_creates_order_from_cart_items_and_debits_stock(self, user, client_profile, address, cart, cart_item, variant):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+    def test_creates_order_from_cart_items_without_touching_stock(self, user, client_profile, address, cart, cart_item, variant):
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
 
         result = create_order_from_cart(user_id=user.user_id, data=payload)
 
@@ -33,11 +38,24 @@ class TestCreateOrderFromCart:
         assert len(result.items) == 1
         assert result.items[0].order_item_quantity == cart_item.quantity_item
 
+        # O estoque só é debitado quando o pagamento é efetivado, não no checkout.
         variant.refresh_from_db()
-        assert variant.stock == 5 - cart_item.quantity_item
+        assert variant.stock == 5
+
+    def test_frete_vem_da_cotacao_e_fica_no_pedido(self, user, client_profile, address, cart, cart_item, frenet_calls):
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04014")
+        result = create_order_from_cart(user_id=user.user_id, data=payload)
+
+        assert result.order_shipping_total == Decimal("39.90")
+        assert result.total_geral == result.subtotal + Decimal("39.90")
+        assert result.shipping_service_code == "04014"
+        assert result.shipping_service_name == "Correios - SEDEX"
+        assert result.shipping_delivery_days == 2
+        # cotou pro CEP do endereço de entrega, não pra um CEP enviado pelo cliente
+        assert frenet_calls[0]["recipient_cep"] == "45200000"
 
     def test_clears_the_cart_after_checkout(self, user, client_profile, address, cart, cart_item):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         create_order_from_cart(user_id=user.user_id, data=payload)
 
         cart.refresh_from_db()
@@ -45,17 +63,17 @@ class TestCreateOrderFromCart:
         assert cart.total_geral == Decimal("0.00")
 
     def test_raises_user_not_found_when_user_does_not_exist(self, address):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         with pytest.raises(UserNotFound):
             create_order_from_cart(user_id=uuid.uuid4(), data=payload)
 
     def test_raises_user_not_found_when_user_has_no_client_profile(self, other_user, address):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         with pytest.raises(UserNotFound):
             create_order_from_cart(user_id=other_user.user_id, data=payload)
 
     def test_raises_permission_denied_when_address_does_not_exist(self, user, client_profile):
-        payload = OrderCreateIn(shipping_address_id=uuid.uuid4())
+        payload = OrderCreateIn(shipping_address_id=uuid.uuid4(), shipping_service_code="04510")
         with pytest.raises(PermissionDenied):
             create_order_from_cart(user_id=user.user_id, data=payload)
 
@@ -77,17 +95,17 @@ class TestCreateOrderFromCart:
             state="BA",
         )
 
-        payload = OrderCreateIn(shipping_address_id=foreign_address.address_id)
+        payload = OrderCreateIn(shipping_address_id=foreign_address.address_id, shipping_service_code="04510")
         with pytest.raises(PermissionDenied):
             create_order_from_cart(user_id=user.user_id, data=payload)
 
     def test_raises_empty_cart_when_user_has_no_cart(self, user, client_profile, address):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         with pytest.raises(EmptyCart):
             create_order_from_cart(user_id=user.user_id, data=payload)
 
     def test_raises_empty_cart_when_cart_has_no_items(self, user, client_profile, address, cart):
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         with pytest.raises(EmptyCart):
             create_order_from_cart(user_id=user.user_id, data=payload)
 
@@ -98,7 +116,7 @@ class TestCreateOrderFromCart:
 
         CartItem.objects.create(cart_id=cart, variant_id=variant, quantity_item=variant.stock + 1)
 
-        payload = OrderCreateIn(shipping_address_id=address.address_id)
+        payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")
         with pytest.raises(InsufficientStock):
             create_order_from_cart(user_id=user.user_id, data=payload)
 
@@ -134,20 +152,19 @@ class TestListOrdersForClient:
 
 
 class TestCancelOrderByClient:
-    def test_cancels_pending_order_and_restocks_variant(self, order, user, variant):
+    def test_cancels_pending_order_without_touching_stock(self, order, user, variant):
         from luxury_fashion.apps.payments.models.order_item_model import OrderItem
 
         OrderItem.objects.create(
             order_id=order, variant_id=variant, order_item_quantity=2, order_item_price=variant.price
         )
-        variant.stock = 0
-        variant.save(update_fields=["stock"])
+        estoque = variant.stock
 
         result = cancel_order_by_client(user_id=user.user_id, order_id=order.order_id, reason="Mudei de ideia")
 
         assert result.order_status.value == Order.StatusOrder.CANCELLED
         variant.refresh_from_db()
-        assert variant.stock == 2
+        assert variant.stock == estoque  # pedido pendente nunca debitou estoque
 
     def test_raises_order_not_found_when_order_belongs_to_another_user(self, order, other_user):
         with pytest.raises(OrderNotFound):

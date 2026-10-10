@@ -21,6 +21,8 @@ from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.products.models.product_category_model import ProductCategory
 from luxury_fashion.apps.products.models.product_model import Product
+from luxury_fashion.apps.products.integrations.frenet_client import FrenetClient
+from luxury_fashion.apps.products.models.product_shipping_model import ProductShipping
 from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
 
 
@@ -140,6 +142,40 @@ def cart_item(cart, variant) -> CartItem:
     item = CartItem.objects.create(cart_id=cart, variant_id=variant, quantity_item=2)
     cart.update_totals()
     return item
+
+
+FRENET_RESPONSE = {
+    "ShippingSevicesArray": [
+        {"Carrier": "Correios", "ServiceDescription": "PAC", "ServiceCode": "04510",
+         "ShippingPrice": "21.50", "DeliveryTime": "6", "Error": False},
+        {"Carrier": "Correios", "ServiceDescription": "SEDEX", "ServiceCode": "04014",
+         "ShippingPrice": "39.90", "DeliveryTime": "2", "Error": False},
+        {"Carrier": "Outra", "ServiceDescription": "Sem cobertura", "ServiceCode": "999",
+         "ShippingPrice": "0", "DeliveryTime": "0", "Error": True, "Msg": "CEP sem cobertura"},
+    ]
+}
+
+
+@pytest.fixture
+def variant_shipping(variant):
+    """Embalagem (peso/dimensões) da variante — pré-requisito pra cotar frete."""
+    return ProductShipping.objects.create(
+        variant_id=variant, weight=Decimal("0.3"), height=Decimal("5"),
+        width=Decimal("12"), length=Decimal("16"), quantity=1,
+    )
+
+
+@pytest.fixture
+def frenet_calls(monkeypatch):
+    """Mocka a cotação da Frenet (nenhuma chamada real) e devolve a lista de chamadas feitas."""
+    calls = []
+
+    def fake(self, **kwargs):
+        calls.append(kwargs)
+        return FRENET_RESPONSE
+
+    monkeypatch.setattr(FrenetClient, "calculate_shipping_for_items", fake)
+    return calls
 
 
 @pytest.fixture
