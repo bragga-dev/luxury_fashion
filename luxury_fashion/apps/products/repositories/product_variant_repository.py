@@ -15,11 +15,11 @@ from luxury_fashion.apps.products.models.product_variant_model import ProductVar
 
 def create_variant(
     product_id: Product,
-    sku: str,
     price: Decimal,
     size: Optional[str] = None,
     color: Optional[str] = None,
     stock: int = 0,
+    sku: Optional[str] = None,
 ) -> ProductVariant:
     variant = ProductVariant(
         product_id=product_id,

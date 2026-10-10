@@ -1,7 +1,8 @@
 from luxury_fashion.apps.cart.services.cart_service import (
     get_or_create_cart_for_user,
     get_cart_for_client,
-    clear_cart_for_client   
+    clear_cart_for_client,
+    refresh_cart_prices,
 )
 
 from luxury_fashion.apps.cart.services.cart_item_service import (
@@ -23,6 +24,7 @@ __all__ = [
 "get_or_create_cart_for_user",
 "get_cart_for_client",
 "clear_cart_for_client",
+"refresh_cart_prices",
 
 "add_item_to_cart",
 "update_cart_item_quantity",
