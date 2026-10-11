@@ -28,6 +28,12 @@ from luxury_fashion.apps.core.exceptions.cart_exception import (
     ShippingOptionUnavailable,
 )
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
+from luxury_fashion.apps.notifications.services.notification_service import (
+    notify_admins_new_order_paid,
+    notify_order_cancelled_no_stock,
+    notify_order_expired,
+    notify_order_paid,
+)
 from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
@@ -207,11 +213,14 @@ def confirm_order_payment(order_id: uuid.UUID) -> bool:
 
     if any(item.order_item_quantity > locked_variants[item.variant_id_id].stock for item in items):
         canceled_order(order=order, reason="Sem estoque no momento da confirmação do pagamento.")
+        notify_order_cancelled_no_stock(order.order_id)
         return False
 
     for item in items:
         adjust_variant_stock(variant=locked_variants[item.variant_id_id], delta=-item.order_item_quantity)
     completed_order(order=order)
+    notify_order_paid(order.order_id)
+    notify_admins_new_order_paid(order.order_id)
     return True
 
 
@@ -255,4 +264,5 @@ def expire_pending_order(order_id: uuid.UUID) -> bool:
         update_payment(payment, status=Payment.PaymentStatus.CANCELLED)
 
     canceled_order(order=order, reason="Pedido expirado por falta de pagamento.")
+    notify_order_expired(order.order_id)
     return True

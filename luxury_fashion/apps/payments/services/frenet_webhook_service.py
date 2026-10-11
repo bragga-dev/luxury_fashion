@@ -12,6 +12,10 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from luxury_fashion.apps.notifications.services.notification_service import (
+    notify_order_in_transit,
+    notify_order_shipped,
+)
 from luxury_fashion.apps.payments.models.order_model import Order
 
 logger = logging.getLogger(__name__)
@@ -58,9 +62,12 @@ def handle_status_update(order_code: str, shipment_id: int, shipment_status: int
         return
 
     if shipment_status == SHIPMENT_POSTED:
+        was_shipped = order.shipping_status == Order.ShippingStatus.SHIPPED
         order.shipping_status = Order.ShippingStatus.SHIPPED
         order.shipped_at = order.shipped_at or timezone.now()
         order.save(update_fields=["shipping_status", "shipped_at", "updated_at"])
+        if not was_shipped:
+            notify_order_shipped(order.order_id)
     elif shipment_status == SHIPMENT_CANCELLED:
         # Etiqueta cancelada na Frenet (reembolso é lá): libera o pedido para nova geração.
         order.shipping_status = Order.ShippingStatus.PENDING
@@ -83,6 +90,9 @@ def handle_tracking_update(order_code: str, shipment_id: int, tracking_number: s
         return
     order.shipping_tracking_code = tracking_number
     # Qualquer evento de tracking após a postagem indica que está a caminho.
-    if order.shipping_status == Order.ShippingStatus.SHIPPED:
+    moved_to_transit = order.shipping_status == Order.ShippingStatus.SHIPPED
+    if moved_to_transit:
         order.shipping_status = Order.ShippingStatus.IN_TRANSIT
     order.save(update_fields=["shipping_tracking_code", "shipping_status", "updated_at"])
+    if moved_to_transit:
+        notify_order_in_transit(order.order_id)

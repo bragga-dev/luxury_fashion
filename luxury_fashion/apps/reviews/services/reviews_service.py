@@ -26,6 +26,11 @@ from luxury_fashion.apps.core.exceptions.service_exception import (
     OrderItemNotReviewable,
 )
 
+from luxury_fashion.apps.notifications.services.notification_service import (
+    clear_review_pending,
+    notify_review_pending_admins,
+    notify_review_published,
+)
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.selectors.order_selector import (
     get_order_item_by_id,
@@ -127,6 +132,7 @@ def create_review_for_client(user_id: UUID, data: ReviewsCreateIn) -> ReviewsPri
     )
 
     _refresh_aggregates(reviews)
+    notify_review_pending_admins(reviews.reviews_id)
     return ReviewsPrivateOut.from_orm(reviews)
 
 
@@ -158,6 +164,7 @@ def update_own_review(user_id: UUID, reviews_id: UUID, data: ReviewsUpdateIn) ->
 
     if content_changed and reviews.is_authorized:
         reviews = revoke_rating_authorization(reviews=reviews)
+        notify_review_pending_admins(reviews.reviews_id)  # voltou pra moderação
 
     _refresh_aggregates(reviews)
     return ReviewsPrivateOut.from_orm(reviews)
@@ -170,6 +177,7 @@ def delete_own_review(user_id: UUID, reviews_id: UUID) -> None:
     product_id = reviews.order_item_id.variant_id.product_id_id
 
     delete_reviews(reviews)
+    clear_review_pending(reviews_id)
 
     recalculate_product_average_rating(product_id=product_id)
 
@@ -220,6 +228,7 @@ def authorize_review_admin(reviews_id: UUID) -> ReviewsPrivateOut:
 
     reviews = authorize_reviews(reviews=reviews)
     _refresh_aggregates(reviews=reviews)
+    notify_review_published(reviews_id)
     return ReviewsPrivateOut.from_orm(reviews)
 
 
@@ -244,4 +253,5 @@ def delete_review_admin(reviews_id: UUID) -> None:
 
     product_id = reviews.order_item_id.variant_id.product_id_id
     delete_reviews(reviews=reviews)
+    clear_review_pending(reviews_id)
     recalculate_product_average_rating(product_id=product_id)

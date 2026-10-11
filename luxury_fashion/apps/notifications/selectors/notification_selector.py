@@ -23,6 +23,17 @@ def count_unread(recipient_id: UUID) -> int:
     return Notification.objects.filter(recipient_id=recipient_id, read_at__isnull=True).count()
 
 
+def get_order_ref(order_id: UUID):
+    """
+    Pedido "magro" (só id, dono e código) pra montar notificação — sem o
+    prefetch de itens/imagens do `get_order_by_id`. Import local evita ciclo
+    (payments.services importa notifications.services).
+    """
+    from luxury_fashion.apps.payments.models.order_model import Order
+
+    return Order.objects.only("order_id", "user_id", "code").filter(order_id=order_id).first()
+
+
 def get_active_admin_ids(*, exclude_id: Optional[UUID] = None) -> list[UUID]:
     """IDs dos admins ativos (destino das notificações administrativas)."""
     qs = User.objects.filter(role=User.UserRole.ADMIN, is_active=True)

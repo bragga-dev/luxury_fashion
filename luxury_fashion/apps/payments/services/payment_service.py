@@ -28,6 +28,7 @@ from luxury_fashion.apps.core.exceptions import (
 from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
+from luxury_fashion.apps.notifications.services.notification_service import notify_order_refunded
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import (
     refunded_order,
@@ -258,3 +259,4 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
             _auto_refund_orphan_payment(payment, order)
     elif status in _REFUND_STATUSES and order.order_status != Order.StatusOrder.REFUNDED:
         refunded_order(order=order)
+        notify_order_refunded(order.order_id)
