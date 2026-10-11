@@ -17,16 +17,17 @@ def build_verification_url(user: User) -> str:
     return f"{settings.BACKEND_URL}/api/auth/verify-email/{uid}/{token}"
 
 
-def build_password_reset_url(user: User) -> str:
-    uid, token = generate_uid_token(user)
+def build_password_reset_url(uid: str, token: str) -> str:
+    """
+    Monta a URL de redefinição de senha a partir de um uid/token já gerados.
+    Não gera um novo par aqui dentro — quem chama essa função é responsável
+    por ter gerado o uid/token corretos (ex: request_password_reset), pra
+    evitar dois pares divergentes sendo criados pra mesma solicitação.
+    """
     return f"{settings.FRONTEND_URL}/redefinir-senha?uid={uid}&token={token}"
 
 
 def verify_email(uidb64: str, token: str) -> User:
-    """
-    Confirma o email do usuário usando uid e token.
-    Retorna o usuário ativado ou levanta exceção.
-    """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)

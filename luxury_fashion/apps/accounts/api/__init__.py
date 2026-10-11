@@ -27,6 +27,9 @@ from luxury_fashion.apps.accounts.api.auth import (
     verify_email_endpoint_router,
     export_my_data_router,
     upload_client_photo_router,
+    update_admin_profile_router,
+    upload_admin_photo_router,
+    delete_admin_photo_router,
 
 )
 
@@ -74,6 +77,9 @@ __all__ = [
     "verify_email_endpoint_router",
     "export_my_data_router",
     "upload_client_photo_router",
+    "update_admin_profile_router",
+    "upload_admin_photo_router",
+    "delete_admin_photo_router",
     
     "check_my_address_exists_router",
     "count_my_addresses_router",

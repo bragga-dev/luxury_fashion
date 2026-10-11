@@ -69,6 +69,7 @@ def list_products_router(
     size: Optional[ProductSizeEnum] = None,
     color: Optional[ProductColorEnum] = None,
     in_stock_only: bool = False,
+    sort: Optional[str] = None,
 ):
     qs = search_products_queryset(
         search=search,
@@ -78,6 +79,7 @@ def list_products_router(
         color=color.value if color else None,
         in_stock_only=in_stock_only,
         active_only=True,
+        sort=sort,
     )
     return 200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm)
 
@@ -90,7 +92,7 @@ def list_products_router(
         "Endpoint de conveniência para o formulário de cadastro completo. "
         "É multipart/form-data (por causa das imagens):\n\n"
         "- `payload` (Form, string): JSON com `product_name`, `product_category_id`, "
-        "`variant` (tamanho/cor/gênero/preço/estoque/descrição) e `shipping` "
+        "`gender`, `description`, `variant` (tamanho/cor/preço/estoque) e `shipping` "
         "(peso/dimensões da embalagem) — mesmo formato do schema `ProductCreateFullIn`.\n"
         "- `images` (File, 0..N): quantas imagens forem necessárias para a galeria do produto.\n"
         "- `cover_index` (Form, int, default 0): posição (na lista `images`) que vira a "

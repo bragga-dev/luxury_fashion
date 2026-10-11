@@ -1,7 +1,3 @@
-
-
-
-
 import uuid
 from ninja import UploadedFile
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -31,10 +27,9 @@ def upload_client_profile_photo(user_id: User, photo: UploadedFile) -> ClientOut
 
 def delete_client_profile_photo(user_id: User) -> ClientOut:
  
-    client = get_client_by_user_id(user_id+user_id)
+    client = get_client_by_user_id(user_id=user_id)
     if not client:
         raise UserNotFound("Cliente não encontrado.")
 
     updated_client = remove_client_photo(client=client)
     return ClientOut.from_orm(updated_client)
-

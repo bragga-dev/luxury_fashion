@@ -85,6 +85,7 @@ def search_products_queryset(
     color: Optional[str] = None,
     in_stock_only: bool = False,
     active_only: bool = True,
+    sort: Optional[str] = None,
 ):
     """
     Mesma filtragem de `search_products_for_all`, mas devolve o QuerySet
@@ -98,6 +99,7 @@ def search_products_queryset(
         color=color,
         in_stock_only=in_stock_only,
         active_only=active_only,
+        sort=sort,
     )
 
 
@@ -111,7 +113,12 @@ def create_product_for_amdin(data: ProductCreateIn) -> ProductOut:
     if product_name_exists(data.product_name):
         raise ProductNameAlreadyExists()
 
-    product = create_product(product_name=data.product_name, product_category_id=category,)
+    product = create_product(
+        product_name=data.product_name,
+        product_category_id=category,
+        gender=data.gender.value,
+        description=data.description,
+    )
     return ProductOut.from_orm(product)
 
 
@@ -134,7 +141,12 @@ def create_product_full_for_admin(
     images = images or []
 
     with transaction.atomic():
-        product = create_product_for_amdin(ProductCreateIn(product_name=data.product_name, product_category_id=data.product_category_id,))
+        product = create_product_for_amdin(ProductCreateIn(
+            product_name=data.product_name,
+            product_category_id=data.product_category_id,
+            gender=data.gender,
+            description=data.description,
+        ))
         variant = create_variant_for_admin(product_id=product.product_id, data=data.variant)
         create_shipping_for_admin(variant_id=variant.variant_id, data=data.shipping)
 

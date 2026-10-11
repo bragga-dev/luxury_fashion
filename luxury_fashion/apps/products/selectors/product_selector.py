@@ -1,9 +1,8 @@
 """
 Product Selectors — queries de leitura. Nenhuma escrita acontece aqui.
 
-Atenção: `gender`, `size` e `color` moram em ProductVariant, não em
-Product — filtrar por qualquer um desses três exige atravessar a
-relação `variants`.
+Atenção: `gender` mora em Product; `size` e `color` moram em
+ProductVariant — filtrar por eles exige atravessar a relação `variants`.
 """
 import uuid
 from typing import Optional
@@ -54,11 +53,16 @@ def filter_products(
     color: Optional[str] = None,
     in_stock_only: bool = False,
     active_only: bool = True,
+    sort: Optional[str] = None,
 ) -> QuerySet[Product]:
     """
-    Filtro combinado da vitrine. `gender`/`size`/`color` filtram por
-    variantes existentes do produto (ex.: gender="masculino" só retorna
-    produtos que tenham ao menos uma variante masculina).
+    Filtro combinado da vitrine. `gender` filtra direto no produto;
+    `size`/`color` filtram por variantes ativas existentes do produto
+    (ex.: size="M" só retorna produtos que tenham ao menos uma variante M).
+
+    `sort`: None (default) mantém a ordenação alfabética de `Product.Meta`
+    (usada no catálogo/busca). `"recent"` ordena pelos mais recém-criados
+    primeiro — usado na seção "Novidades" da home.
     """
     qs = Product.objects.select_related("product_category_id")
 
@@ -76,7 +80,7 @@ def filter_products(
         qs = qs.filter(product_category_id=product_category_id)
 
     if gender:
-        qs = qs.filter(variants__gender=gender, variants__is_active=True)
+        qs = qs.filter(gender=gender)
 
     if size:
         qs = qs.filter(variants__size=size, variants__is_active=True)
@@ -87,4 +91,8 @@ def filter_products(
     if in_stock_only:
         qs = qs.filter(variants__is_active=True, variants__stock__gt=0)
 
-    return _with_variants_and_images(qs.distinct())
+    qs = qs.distinct()
+    if sort == "recent":
+        qs = qs.order_by("-created_at")
+
+    return _with_variants_and_images(qs)

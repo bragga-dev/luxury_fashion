@@ -2,28 +2,28 @@ from ninja import NinjaAPI, Swagger
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.exceptions import AuthenticationFailed as JWTAuthenticationFailed
 from ninja.errors import ValidationError, AuthenticationError
-from django.http import HttpRequest
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
+from luxury_fashion.apps.accounts.api.address import router as address_router
 from luxury_fashion.apps.products.api.category import router as category_router
 from luxury_fashion.apps.products.api.product import router as product_router
-from luxury_fashion.apps.products.api.frenet import  router as frenet_router
-from luxury_fashion.apps.cart.api.cart import  router as cart_router
+from luxury_fashion.apps.products.api.frenet import router as frenet_router
+from luxury_fashion.apps.products.api.variant import router as variant_router
+from luxury_fashion.apps.products.api.image import router as product_image_router
+from luxury_fashion.apps.cart.api.cart import router as cart_router
 from luxury_fashion.apps.payments.api.orders import router as orders_router
 from luxury_fashion.apps.payments.api.payments import router as payments_router
 from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_router
-from luxury_fashion.apps.products.api.frenet import router as frenet_router
-from luxury_fashion.apps.accounts.api.address import router as address_router
-
-
-
+from luxury_fashion.apps.payments.api.frenet_webhook import router as frenet_webhook_router
+from luxury_fashion.apps.reviews.api.reviews import router as reviews_router
+from luxury_fashion.apps.website.api.campaign import router as campaign_router
+from luxury_fashion.apps.website.api.contact import router as contact_router
 from django_ratelimit.exceptions import Ratelimited
-import logging
 from django.conf import settings
-logger = logging.getLogger("django")
 
+import logging
 
 from luxury_fashion.apps.core.permissions.auth_classes import (
     AdminOnlyAuth,
@@ -32,29 +32,38 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
     ActiveUserAuth,
 )
 
+logger = logging.getLogger("django")
+
 api = NinjaAPI(
-    title="ÉLUXO MODAS API",
+    title="Gama Fashion - Moda Fitness",
     version="1.0.0",
-    description="E-commerce de moda masculina e feminina.",
+    description="E-commerce de moda Fitness masculina e feminina.",
     auth=[JWTAuth(), AdminOnlyAuth(), ClientOnlyAuth(), VerifiedUserAuth(), ActiveUserAuth()],
     urls_namespace="api",
     docs=Swagger(settings={"persistAuthorization": True}),
+    docs_url="/docs" if settings.API_DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if settings.API_DOCS_ENABLED else None,
 )
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
-
 api.add_router("/auth/", auth_router, tags=["Auth"])
 api.add_router("/admin/", admin_router, tags=["Admin"])
 api.add_router("/categories/", category_router, tags=["Category"])
 api.add_router("/products/", product_router, tags=["Produtos"])
+api.add_router("/shipping/webhooks/frenet/", frenet_webhook_router, tags=["Webhooks"])
 api.add_router("/shipping/", frenet_router, tags=["Shipping"])
 api.add_router("/cart/", cart_router, tags=["Cart"])
 api.add_router("/orders/", orders_router, tags=["Orders"])
+api.add_router("/payments", asaas_webhook_router, tags=["Webhooks"])
 api.add_router("/", payments_router, tags=["Payments"])
-api.add_router("/webhooks/asaas/", asaas_webhook_router, tags=["Webhooks"])
 api.add_router("/address/", address_router, tags=["Address"])
+api.add_router("/reviews/", reviews_router, tags=["Reviews"])
+api.add_router("/campaigns/", campaign_router, tags=["Campaigns"])
+api.add_router("/contact/", contact_router, tags=["Contact"])
+api.add_router("/products/", variant_router, tags=["Variantes"])
+api.add_router("/products/", product_image_router, tags=["Imagens de Produto"])
 
 
 # ── Handlers de erro globais ──────────────────────────────────────────────────

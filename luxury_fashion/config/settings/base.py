@@ -1,14 +1,14 @@
+import os
 from pathlib import Path
 from datetime import timedelta
 import environ
 from colorlog import ColoredFormatter
 
-
 # =========================================================
 # BASE
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 # =========================================================
@@ -65,14 +65,15 @@ THIRD_PARTY_APPS = [
 # =========================================================
 
 LOCAL_APPS = [
-    
+
     "luxury_fashion.apps.core",
     "luxury_fashion.apps.accounts",
     "luxury_fashion.apps.products",
     "luxury_fashion.apps.payments",
     "luxury_fashion.apps.cart",
     "luxury_fashion.apps.reviews",
-   
+    "luxury_fashion.apps.website",
+
 ]
 
 
@@ -225,6 +226,17 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 COOKIE_SAMESITE = env("COOKIE_SAMESITE", default="Lax")
 COOKIE_SECURE = env.bool("COOKIE_SECURE", default=not DEBUG)
 
+# Versões dos documentos legais vigentes. O cadastro grava qual versão o usuário aceitou;
+# ao publicar uma nova versão, troque aqui (o front pede novo aceite via GET /auth/consents).
+LEGAL_TERMS_VERSION = env("LEGAL_TERMS_VERSION", default="1.0")
+LEGAL_PRIVACY_VERSION = env("LEGAL_PRIVACY_VERSION", default="1.0")
+
+# Swagger/OpenAPI: ligados por padrão só em DEBUG (o prod.py desliga).
+API_DOCS_ENABLED = env.bool("API_DOCS_ENABLED", default=DEBUG)
+
+# Caminho do Django admin. Em produção troque por algo não óbvio (ex.: ADMIN_URL=painel-x9k2/).
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
 
 # =========================================================
 # REDIS
@@ -307,23 +319,24 @@ LOGGING = {
 # =========================================================
 # ASAAS
 # =========================================================
-ASAAS_API_KEY = env("ASAAS_API_KEY")
+
+ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "").removeprefix("\\")
 ASAAS_BASE_URL = env("ASAAS_BASE_URL", default="https://api-sandbox.asaas.com/v3")
 ASAAS_CUSTOMER_ID = env("ASAAS_CUSTOMER_ID")
 ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN")
 ASAAS_PAYMENT_DUE_DAYS = env.int("ASAAS_PAYMENT_DUE_DAYS", default=1)
-SCHEDULING_RESERVATION_TTL_MINUTES = env.int("SCHEDULING_RESERVATION_TTL_MINUTES", default=30)
+ORDER_PENDING_EXPIRATION_HOURS = env.int("ORDER_PENDING_EXPIRATION_HOURS", default=48)
 
 
 # =========================================================
 # EMAIL
 # =========================================================
-EMAIL_BACKEND = ("django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="smtp-relay.brevo.com")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TSL", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="bragawebdevelopment@gmail.com")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_SUBJECT_PREFIX = "[É LUXO MODAS]"
@@ -405,11 +418,11 @@ STORAGES = {
 # =========================================================
 # FIELD ENCRYPTION
 # =========================================================
-FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY") 
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
 
 
 # =========================================================
-# FRONTEND  
+# FRONTEND
 # =========================================================
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 BACKEND_URL  = env("BACKEND_URL",  default="http://localhost:8000")
@@ -446,8 +459,20 @@ ORIGIN_ZIP_CODE = "45201347"
 # =========================================================
 # FRENET
 # =========================================================
+# Cotação (API de cliente) — só exige o token do cliente.
 FRENET_BASE_URL = env("FRENET_BASE_URL", default="https://api.frenet.com.br")
 FRENET_API_KEY = env("FRENET_API_KEY")
+
+# Etiquetas (Orders OneClick) — API Whitelabel, exige Partner Token.
+# Só existe produção (o ambiente hml foi desativado pela Frenet).
+FRENET_WHITELABEL_BASE_URL = env("FRENET_WHITELABEL_BASE_URL", default="https://whitelabel.apifrenet.com.br")
+FRENET_PARTNER_TOKEN = env("FRENET_PARTNER_TOKEN", default="")
+FRENET_PRINTING_FORMAT = env("FRENET_PRINTING_FORMAT", default="")  # vazio = A4 (padrão da Frenet)
+# Base pública do backend que recebe os webhooks (ex.: https://api.seudominio.com). Vazio = não envia.
+FRENET_WEBHOOK_BASE_URL = env("FRENET_WEBHOOK_BASE_URL", default="")
+# Header de segurança opcional dos webhooks (a Frenet precisa ser avisada do par nome/valor).
+FRENET_WEBHOOK_TOKEN_NAME = env("FRENET_WEBHOOK_TOKEN_NAME", default="FRENET_INTEGRATION")
+FRENET_WEBHOOK_TOKEN_VALUE = env("FRENET_WEBHOOK_TOKEN_VALUE", default="")
 
 
 # ==============================================================

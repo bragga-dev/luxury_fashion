@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from .base import *
 
 
@@ -29,6 +31,13 @@ DATABASES["default"]["CONN_MAX_AGE"] = 60
 # =========================================================
 
 SECURE_SSL_REDIRECT = True
+
+# O base calcula COOKIE_SECURE a partir do DEBUG do .env; aqui o DEBUG é forçado a False
+# DEPOIS, então um .env de prod copiado do dev deixava o cookie do refresh sem Secure.
+COOKIE_SECURE = env.bool("COOKIE_SECURE", default=True)
+
+# Swagger/OpenAPI públicos expõem o mapa inteiro da API: desligados por padrão em produção.
+API_DOCS_ENABLED = env.bool("API_DOCS_ENABLED", default=False)
 
 SESSION_COOKIE_SECURE = True
 
@@ -165,29 +174,6 @@ ADMINS = [
 
 
 # =========================================================
-# PASSWORD VALIDATION
-# =========================================================
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator"
-        ),
-    },
-    {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator"
-        ),
-        "OPTIONS": {
-            "min_length": 8
-        }
-    },
-]
-
-
-# =========================================================
 # PERFORMANCE
 # =========================================================
 
@@ -211,8 +197,9 @@ MINIO_URL_PROTOCOL = "https:"
 # JWT
 # =========================================================
 NINJA_JWT = {
-    # ── Tempo de vida dos tokens ──────────────────────────────────────────
+    # MERGE com o base: sem o `**NINJA_JWT` a rotação do refresh e o blacklist
+    # (definidos no base.py) eram descartados em produção.
+    **NINJA_JWT,
     "ACCESS_TOKEN_LIFETIME":  timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-
 }

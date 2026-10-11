@@ -1,4 +1,3 @@
-
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.mail import send_mail
@@ -24,6 +23,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_('Data de admissão'), default=timezone.now)
     created_at  = models.DateTimeField(_('Criado em'), auto_now_add=True)
     updated_at  = models.DateTimeField(_('Atualizado em'), auto_now=True)
+
+    # ── Consentimento (LGPD): prova de qual documento foi aceito, quando e de onde ──
+    terms_accepted_at = models.DateTimeField(_('Termos aceitos em'), null=True, blank=True)
+    terms_version = models.CharField(_('Versão dos Termos aceita'), max_length=20, blank=True, default='')
+    privacy_version = models.CharField(_('Versão da Política de Privacidade aceita'), max_length=20, blank=True, default='')
+    consent_ip = models.GenericIPAddressField(_('IP do aceite'), null=True, blank=True)
+    marketing_opt_in = models.BooleanField(_('Aceita comunicações de marketing?'), default=False)
+    marketing_opt_in_at = models.DateTimeField(_('Marketing: data da última alteração'), null=True, blank=True)
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = []

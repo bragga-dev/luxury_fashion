@@ -28,4 +28,4 @@ def get_all_categories(active_only: bool = True) -> QuerySet[ProductCategory]:
 
 
 def category_has_products(category: ProductCategory) -> bool:
-    return category.product_category.exists()
+    return category.products.exists()

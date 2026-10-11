@@ -13,11 +13,15 @@ from luxury_fashion.apps.products.models.product_model import Product
 def create_product(
     product_name: str,
     product_category_id: ProductCategory,
+    gender: str,
+    description: str = "",
     is_active: bool = True,
 ) -> Product:
     product = Product(
         product_name=product_name,
         product_category_id=product_category_id,
+        gender=gender,
+        description=description,
         is_active=is_active,
     )
     product.full_clean()

@@ -5,7 +5,7 @@ ClientOnlyAuth — quem chama é a Asaas, não o cliente logado).
 """
 import uuid
 
-from ninja import Router
+from ninja import Router, Status
 from django_ratelimit.decorators import ratelimit
 
 from luxury_fashion.apps.accounts.models.user_model import User
@@ -18,10 +18,11 @@ from luxury_fashion.apps.core.exceptions import (
     PaymentNotFound,
     PaymentNotRefundable,
 )
-from luxury_fashion.apps.core.permissions.auth_classes import ClientOnlyAuth
+from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth, ClientOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
 from luxury_fashion.apps.payments.schemas.payment_schema import PaymentCreateIn, PaymentOut, RefundIn
 from luxury_fashion.apps.payments.services.payment_service import (
+    refund_payment_as_admin,
     create_payment_for_order,
     get_payment_for_client,
     list_payments_for_order,
@@ -41,15 +42,15 @@ router = Router()
 def create_payment_router(request, order_id: uuid.UUID, payload: PaymentCreateIn):
     try:
         user: User = request.auth
-        return 201, create_payment_for_order(user.user_id, order_id, payload)
+        return Status(201, create_payment_for_order(user.user_id, order_id, payload))
     except OrderNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except (OrderNotPayable, OrderAlreadyPaid) as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except CpfOrCnpjRequired as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
     except AsaasAPIError as e:
-        return 502, {"detail": e.message}
+        return Status(502, {"detail": e.message})
 
 
 @router.get(
@@ -62,9 +63,9 @@ def create_payment_router(request, order_id: uuid.UUID, payload: PaymentCreateIn
 def list_order_payments_router(request, order_id: uuid.UUID):
     try:
         user: User = request.auth
-        return 200, list_payments_for_order(user.user_id, order_id)
+        return Status(200, list_payments_for_order(user.user_id, order_id))
     except OrderNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.get(
@@ -77,9 +78,9 @@ def list_order_payments_router(request, order_id: uuid.UUID):
 def get_payment_router(request, payment_id: uuid.UUID):
     try:
         user: User = request.auth
-        return 200, get_payment_for_client(user.user_id, payment_id)
+        return Status(200, get_payment_for_client(user.user_id, payment_id))
     except PaymentNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -92,10 +93,28 @@ def get_payment_router(request, payment_id: uuid.UUID):
 def refund_payment_router(request, payment_id: uuid.UUID, payload: RefundIn):
     try:
         user: User = request.auth
-        return 200, refund_payment(user.user_id, payment_id, payload.value, payload.description)
+        return Status(200, refund_payment(user.user_id, payment_id, payload.value, payload.description))
     except PaymentNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except PaymentNotRefundable as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except AsaasAPIError as e:
-        return 502, {"detail": e.message}
+        return Status(502, {"detail": e.message})
+
+
+@router.post(
+    "/admin/payments/{payment_id}/refund",
+    response={200: PaymentOut, 404: MessageOut, 409: MessageOut, 502: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Estorna uma cobrança paga (admin) — vale mesmo com pedido já enviado",
+)
+@ratelimit(key="user", rate="30/m", block=True)
+def admin_refund_payment_router(request, payment_id: uuid.UUID, payload: RefundIn):
+    try:
+        return Status(200, refund_payment_as_admin(payment_id, payload.value, payload.description))
+    except PaymentNotFound as e:
+        return Status(404, {"detail": str(e)})
+    except PaymentNotRefundable as e:
+        return Status(409, {"detail": str(e)})
+    except AsaasAPIError as e:
+        return Status(502, {"detail": e.message})

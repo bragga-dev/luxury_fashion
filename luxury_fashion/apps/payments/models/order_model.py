@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from luxury_fashion.apps.core.exceptions.service_exception import  InvalidOrderStatusTransition
+from luxury_fashion.apps.core.exceptions.payment_exception import InvalidOrderStatusTransition
 from luxury_fashion.apps.core.utils.generate_random_code import generate_random_code
 
 
@@ -16,11 +16,13 @@ class Order(models.Model):
         REFUNDED = "REFUNDED", _("Reembolsado")
         FAILED = "FAILED", _("Falhou")
 
-    # PENDING = aguardando pagamento (é criado assim e permanece até o
-    # webhook da Asaas confirmar ou algo dar errado). Não existe estado
-    # intermediário "PROCESSING" — o Payment em si já tem status próprio
-    # pra acompanhar a cobrança em andamento; duplicar isso no Order só
-    # criaria dois lugares pra sincronizar.
+    class ShippingStatus(models.TextChoices):
+        PENDING = "pending", "Aguardando envio"
+        LABEL_GENERATED = "label_generated", "Etiqueta gerada"
+        SHIPPED = "shipped", "Enviado"
+        IN_TRANSIT = "in_transit", "Em transporte"
+        DELIVERED = "delivered", "Entregue"
+
     ALLOWED_TRANSITIONS = {
         StatusOrder.PENDING: {StatusOrder.COMPLETED, StatusOrder.CANCELLED, StatusOrder.FAILED},
         StatusOrder.COMPLETED: {StatusOrder.REFUNDED},
@@ -42,6 +44,15 @@ class Order(models.Model):
     completed_at = models.DateTimeField(_("Concluído em"), null=True, blank=True)
     created_at = models.DateTimeField(_("Data da compra"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Data de atualização"), auto_now=True)
+
+    shipping_service_code = models.CharField(_("Código do serviço Frenet"), max_length=50, blank=True, null=True, help_text=_("Service code retornado pela cotação Frenet e escolhido pelo cliente no checkout."))
+    shipping_service_name = models.CharField(_("Serviço de frete"), max_length=255, blank=True, null=True)
+    shipping_delivery_days = models.PositiveIntegerField(_("Prazo de entrega prometido (dias)"), blank=True, null=True)
+    frenet_order_id = models.CharField(max_length=100, blank=True, null=True)
+    shipping_tracking_code = models.CharField(max_length=100, blank=True, null=True)
+    shipping_label_url = models.URLField(blank=True, null=True)
+    shipping_status = models.CharField(max_length=30, choices=ShippingStatus.choices, default=ShippingStatus.PENDING)
+    shipped_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         verbose_name = _("Pedido")

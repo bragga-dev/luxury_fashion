@@ -16,7 +16,7 @@ from luxury_fashion.apps.core.security.cpf_crypto import decrypt_cpf, encrypt_cp
 
 def client_photo_path(instance, filename):
     ext = filename.rsplit(".", 1)[-1].lower()
-    return f"photos/{instance.id}/{uuid.uuid4().hex}.{ext}"
+    return f"photos/{instance.client_id}/{uuid.uuid4().hex}.{ext}"
 
 DEFAULT_CLIENT_PHOTO = "default/client_img.jpg"
 

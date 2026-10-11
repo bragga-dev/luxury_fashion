@@ -19,10 +19,25 @@ class AsaasClient:
 
     @staticmethod
     def _redact_body(body):
-        if not isinstance(body, dict) or "cpfCnpj" not in body:
+        if not isinstance(body, dict):
             return body
         redacted = dict(body)
-        redacted["cpfCnpj"] = "***"
+        if "cpfCnpj" in redacted:
+            redacted["cpfCnpj"] = "***"
+        if "creditCard" in redacted and redacted["creditCard"]:
+            redacted["creditCard"] = {
+                "holderName": "***",
+                "number": "***",
+                "expiryMonth": "**",
+                "expiryYear": "****",
+                "ccv": "***",
+            }
+        if "creditCardHolderInfo" in redacted and redacted["creditCardHolderInfo"]:
+            holder = dict(redacted["creditCardHolderInfo"])
+            for key in ("cpfCnpj", "email", "phone", "postalCode", "addressNumber"):
+                if key in holder:
+                    holder[key] = "***"
+            redacted["creditCardHolderInfo"] = holder
         return redacted
 
     def _request(self, method: str, path: str, **kwargs) -> dict:

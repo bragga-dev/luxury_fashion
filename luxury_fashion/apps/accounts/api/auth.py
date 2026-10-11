@@ -6,11 +6,14 @@ from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpResponseRedirect, JsonResponse
 from django_ratelimit.decorators import ratelimit
-from ninja import File, Router, UploadedFile
+from ninja import File, Router, Status, UploadedFile
 from ninja_jwt.authentication import JWTAuth
 
+from luxury_fashion.apps.core.exceptions.auth import TermsNotAccepted
+from luxury_fashion.apps.core.utils.request import get_client_ip
 from luxury_fashion.apps.core.tokens.cookies import (
     REFRESH_COOKIE_NAME,
+    has_trusted_origin,
     set_refresh_cookie,
     clear_refresh_cookie,
 )
@@ -35,8 +38,8 @@ from luxury_fashion.apps.accounts.services.user_service import (
     register_user_default_client,
     get_current_user_profile,
     update_client_profile,
-    
-    
+    get_consents,
+    update_consents,
 )
 from luxury_fashion.apps.accounts.services.client_service import (
     upload_client_profile_photo,
@@ -49,6 +52,8 @@ from luxury_fashion.apps.accounts.schemas.client_schema import ClientOut, Client
 from luxury_fashion.apps.accounts.schemas.user_schema import (
     ChangePasswordIn,
     DeleteAccountIn,
+    ConsentOut,
+    ConsentUpdateIn,
     GoogleLoginIn,
     LoginIn,
     MessageOut,
@@ -58,7 +63,7 @@ from luxury_fashion.apps.accounts.schemas.user_schema import (
     SessionOut,
     AccessTokenOut,
 )
-
+from luxury_fashion.apps.accounts.schemas.admin_schema import AdminProfileOut, AdminProfileUpdateIn
 from luxury_fashion.apps.accounts.schemas.me_schema import  MeOut
 
 
@@ -95,7 +100,11 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
 
 from luxury_fashion.apps.accounts.schemas.user_schema import UserOut
 from luxury_fashion.apps.accounts.models.user_model import User
-
+from luxury_fashion.apps.accounts.services.admin_service import (
+    update_admin_profile,
+    upload_admin_profile_photo,
+    delete_admin_profile_photo,
+)
 
 router = Router()
 
@@ -114,9 +123,9 @@ router = Router()
 @ratelimit(key="ip", rate="15/m", block=True)
 def me_router(request):
     try:
-        return 200, get_current_user_profile(request.auth.user_id)
+        return Status(200, get_current_user_profile(request.auth.user_id))
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 
@@ -133,9 +142,9 @@ def login_router(request, payload: LoginIn):
     try:
         tokens = login_user(payload.email, payload.password, user_agent=request.headers.get("User-Agent", ""))
     except EmailNotVerified:
-        return 403, {"detail": "E-mail não verificado."}
+        return Status(403, {"detail": "E-mail não verificado."})
     except InvalidCredentials:
-        return 401, {"detail": "E-mail ou senha inválidos."}
+        return Status(401, {"detail": "E-mail ou senha inválidos."})
 
     response = JsonResponse({"access": tokens["access"]}, status=200)
     set_refresh_cookie(response, tokens["refresh"])
@@ -143,13 +152,14 @@ def login_router(request, payload: LoginIn):
 
 @router.post(
     "/google",
-    response={200: AccessTokenOut, 201: AccessTokenOut, 401: MessageOut},
+    response={200: AccessTokenOut, 201: AccessTokenOut, 400: MessageOut, 401: MessageOut},
     auth=None,
     summary="Login/Cadastro de Cliente via Google",
     description=(
         "Recebe o id_token (credential) emitido pelo Google Identity Services "
         "no frontend. Se já existir um usuário com o e-mail da conta Google, "
         "efetua login (200). Caso contrário, cria um novo Cliente já verificado (201). "
+        "Conta NOVA exige `accepted_terms=true` (senão 400 e o front mostra o aceite e reenvia). "
         "Sempre cadastra/loga com role 'client'. O refresh token vai num cookie httpOnly."
     ),
 )
@@ -157,10 +167,16 @@ def login_router(request, payload: LoginIn):
 def google_login_router(request, payload: GoogleLoginIn):
     try:
         tokens, created = login_or_register_client_google(
-            payload.id_token, user_agent=request.headers.get("User-Agent", "")
+            payload.id_token,
+            user_agent=request.headers.get("User-Agent", ""),
+            accepted_terms=payload.accepted_terms,
+            marketing_opt_in=payload.marketing_opt_in,
+            ip=get_client_ip(request),
         )
     except InvalidGoogleToken as e:
-        return 401, {"detail": str(e)}
+        return Status(401, {"detail": str(e)})
+    except TermsNotAccepted as e:
+        return Status(400, {"detail": str(e)})
 
     response = JsonResponse({"access": tokens["access"]}, status=201 if created else 200)
     set_refresh_cookie(response, tokens["refresh"])
@@ -169,13 +185,15 @@ def google_login_router(request, payload: GoogleLoginIn):
 
 @router.post(
     "/logout",
-    response={200: MessageOut},
+    response={200: MessageOut, 403: MessageOut},
     auth=AllRolesAuth(),
     summary="Logout (blacklista o refresh token)",
     description="Lê o refresh do cookie httpOnly, blacklista e limpa o cookie. Idempotente: mesmo sem cookie válido, retorna sucesso.",
 )
 @ratelimit(key="user", rate="30/m", block=True)
 def logout_router(request):
+    if not has_trusted_origin(request):
+        return Status(403, {"detail": "Origem não autorizada."})
     refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
     if refresh_token:
         try:
@@ -198,7 +216,7 @@ def logout_router(request):
 @ratelimit(key="user", rate="10/h", block=True)
 def logout_all_router(request):
     logout_all_sessions(request.auth)
-    return 200, {"detail": "Sessões encerradas em todos os dispositivos."}
+    return Status(200, {"detail": "Sessões encerradas em todos os dispositivos."})
 
 
 @router.get(
@@ -211,7 +229,7 @@ def logout_all_router(request):
 @ratelimit(key="user", rate="30/m", block=True)
 def list_sessions_router(request):
     sessions = list_active_sessions(request.auth)
-    return 200, [SessionOut.from_orm(token) for token in sessions]
+    return Status(200, [SessionOut.from_orm(token) for token in sessions])
 
 
 @router.delete(
@@ -225,9 +243,9 @@ def list_sessions_router(request):
 def revoke_session_router(request, session_id: int):
     try:
         revoke_session(user=request.auth, session_id=session_id)
-        return 200, {"detail": "Sessão revogada com sucesso."}
+        return Status(200, {"detail": "Sessão revogada com sucesso."})
     except SessionNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
     
 
@@ -235,7 +253,7 @@ def revoke_session_router(request, session_id: int):
 @ratelimit(key="ip", rate="5/h", block=True,)
 def password_reset_request_router(request, payload: PasswordResetRequestIn):
     request_password_reset(payload.email)
-    return 200, {"detail": "Se este e-mail estiver cadastrado, você receberá as instruções em breve."}
+    return Status(200, {"detail": "Se este e-mail estiver cadastrado, você receberá as instruções em breve."})
 
 
 @router.post("/password-reset/confirm", response={200: MessageOut, 400: MessageOut},  auth=None, summary="Confirmar reset de senha",)
@@ -247,28 +265,30 @@ def password_reset_confirm_router(request, payload: PasswordResetConfirmIn):
             token=payload.token,
             new_password=payload.new_password,
         )
-        return 200, {"detail": "Senha redefinida com sucesso."}
+        return Status(200, {"detail": "Senha redefinida com sucesso."})
     except InvalidToken:
-        return 400, {"detail": "Token inválido ou expirado."}
+        return Status(400, {"detail": "Token inválido ou expirado."})
 
 
 @router.post(
     "/refresh",
-    response={200: AccessTokenOut, 401: MessageOut},
+    response={200: AccessTokenOut, 401: MessageOut, 403: MessageOut},
     auth=None,
     summary="Renovar access token",
     description="Lê o refresh token do cookie httpOnly (não vai mais no body). A cada uso, rotaciona: o refresh antigo é blacklistado e um novo é setado no cookie.",
 )
 @ratelimit(key="ip", rate="30/m", block=True)
 def refresh_router(request):
+    if not has_trusted_origin(request):
+        return Status(403, {"detail": "Origem não autorizada."})
     refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
     if not refresh_token:
-        return 401, {"detail": "Sessão expirada. Faça login novamente."}
+        return Status(401, {"detail": "Sessão expirada. Faça login novamente."})
 
     try:
         data = refresh_access_token(refresh_token)
     except InvalidToken as e:
-        return 401, {"detail": str(e)}
+        return Status(401, {"detail": str(e)})
 
     response = JsonResponse({"access": data["access"]}, status=200)
     if "refresh" in data:
@@ -280,14 +300,22 @@ def refresh_router(request):
     response={201: AccessTokenOut, 409: MessageOut},
     auth=None,
     summary="Cadastro de Cliente",
-    description="Cria o usuário (inativo até confirmar e-mail) e dispara e-mail de verificação em background. Refresh token vai em cookie httpOnly.",
+    description=(
+        "Cria o usuário (inativo até confirmar e-mail) e dispara e-mail de verificação em background. "
+        "Exige `accepted_terms=true` (Termos de Uso + Política de Privacidade); `marketing_opt_in` é opcional. "
+        "O aceite é registrado com versão, data e IP. Refresh token vai em cookie httpOnly."
+    ),
 )
 @ratelimit(key="ip", rate="5/h", block=True)
 def register_router(request, payload: RegisterIn):
     try:
-        tokens = register_user_default_client(payload, user_agent=request.headers.get("User-Agent", ""))
+        tokens = register_user_default_client(
+            payload,
+            user_agent=request.headers.get("User-Agent", ""),
+            ip=get_client_ip(request),
+        )
     except UserAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
 
     response = JsonResponse({"access": tokens["access"]}, status=201)
     set_refresh_cookie(response, tokens["refresh"])
@@ -319,7 +347,7 @@ def resend_verification_email_router(request, email: str):
     if user and not user.is_active:
         send_verification_email.delay(user.user_id)
 
-    return 200, {"detail": "Se este e-mail estiver cadastrado e pendente de verificação, você receberá as instruções em breve."}
+    return Status(200, {"detail": "Se este e-mail estiver cadastrado e pendente de verificação, você receberá as instruções em breve."})
 
 
 
@@ -343,7 +371,7 @@ def change_password_router(request, payload: ChangePasswordIn):
             user_agent=request.headers.get("User-Agent", ""),
         )
     except InvalidPassword as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
     response = JsonResponse({"access": tokens["access"]}, status=200)
     set_refresh_cookie(response, tokens["refresh"])
@@ -356,20 +384,46 @@ def change_password_router(request, payload: ChangePasswordIn):
     auth=ClientOnlyAuth(),
     summary="Exclui a própria conta",
     description=(
-        "Exclusão de conta pelo próprio usuário (LGPD — direito de eliminação). "
-        "Exige confirmação de senha. Não é um hard-delete: o registro é mantido "
-        "para preservar vínculos (pedidos, pagamentos, etc.), mas todo dado "
-        "pessoal do perfil é apagado/anonimizado, a senha se torna inutilizável "
-        "e todas as sessões são revogadas imediatamente."
+        "Exclusão de conta pelo próprio usuário (LGPD — direito de eliminação). Exige confirmação de senha. "
+        "Sem pedidos: exclusão definitiva. Com pedidos: os pedidos, pagamentos e endereços de entrega são mantidos "
+        "(obrigação fiscal/legal), mas todo dado pessoal (e-mail, nome, telefone, nascimento, CPF, foto, avaliações, "
+        "carrinho, mensagens de contato) é apagado/anonimizado, a senha fica inutilizável e as sessões são revogadas."
     ),
 )
 @ratelimit(key="user", rate="5/h", block=True)
 def delete_account_router(request, payload: DeleteAccountIn):
     try:
         delete_own_account(user=request.auth, password=payload.password)
-        return 200, {"detail": "Conta excluída com sucesso."}
+        return Status(200, {"detail": "Conta excluída com sucesso."})
     except InvalidPassword as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
+
+
+@router.get(
+    "/consents",
+    response={200: ConsentOut},
+    auth=ClientOnlyAuth(),
+    summary="Situação dos consentimentos (termos/privacidade e marketing)",
+    description=(
+        "Devolve o que o usuário aceitou e as versões vigentes. `needs_reacceptance=true` quando os "
+        "documentos mudaram (ou a conta é anterior ao registro de aceite): o front deve pedir novo aceite."
+    ),
+)
+@ratelimit(key="user", rate="60/m", block=True)
+def get_consents_router(request):
+    return Status(200, get_consents(request.auth))
+
+
+@router.patch(
+    "/consents",
+    response={200: ConsentOut},
+    auth=ClientOnlyAuth(),
+    summary="Aceita a versão vigente dos termos e/ou liga/desliga marketing",
+    description="`accepted_terms=true` registra o aceite da versão vigente (com data e IP). `marketing_opt_in` liga/desliga comunicações de marketing a qualquer momento.",
+)
+@ratelimit(key="user", rate="30/h", block=True)
+def update_consents_router(request, payload: ConsentUpdateIn):
+    return Status(200, update_consents(request.auth, payload, ip=get_client_ip(request)))
 
 
 @router.get(
@@ -379,12 +433,13 @@ def delete_account_router(request, payload: DeleteAccountIn):
     summary="Exporta os dados pessoais do usuário logado",
     description=(
         "Direito de portabilidade (LGPD): retorna os dados pessoais do usuário "
-        "autenticado (conta + perfil) em formato estruturado."
+        "autenticado em formato estruturado: conta e consentimentos, perfil, endereços, pedidos (itens, frete, "
+        "pagamentos), avaliações e mensagens de contato."
     ),
 )
 @ratelimit(key="user", rate="10/h", block=True)
 def export_my_data_router(request):
-    return 200, export_user_data(request.auth.user_id)
+    return Status(200, export_user_data(request.auth.user_id))
 
 
 
@@ -394,9 +449,9 @@ def export_my_data_router(request):
 def deactivate_account_router(request, user_id: uuid.UUID):
     try:
         user = deactivate_account(user_id, performed_by=request.auth)
-        return 201, UserOut.from_orm(user=user)
+        return Status(201, UserOut.from_orm(user=user))
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post("/reactivate-user/{user_id}", response={201: UserOut, 404: MessageOut, 400: MessageOut}, auth=AdminOnlyAuth(), summary="Reativa Usuário.")
@@ -404,9 +459,9 @@ def deactivate_account_router(request, user_id: uuid.UUID):
 def reactivate_user_router(request, user_id: uuid.UUID):
     try:
         user = reactivate_user(user_id, performed_by=request.auth)
-        return 201, UserOut.from_orm(user=user)
+        return Status(201, UserOut.from_orm(user=user))
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.patch("/update-client-profile", response={200: ClientOut, 404: MessageOut, 400: MessageOut}, auth=ClientOnlyAuth(), summary="Atualiza perfil do Cliente logado.")
@@ -415,11 +470,11 @@ def update_profile_client_router(request, payload: ClientUpdateIn):
     try:
         user: User = request.auth
         client_updated = update_client_profile(user_id=user.user_id, payload=payload)
-        return 200, client_updated 
+        return Status(200, client_updated )
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 
@@ -429,12 +484,12 @@ def update_profile_client_router(request, payload: ClientUpdateIn):
 def upload_client_photo_router(request, photo: UploadedFile = File(...)):
     try:
         user: User = request.auth
-        client_updated = upload_client_profile_photo(user=user, photo=photo)
-        return 200, client_updated
+        client_updated = upload_client_profile_photo(user_id=user.user_id, photo=photo)
+        return Status(200, client_updated)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except InvalidImageFile as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 @router.delete("/delete-client-photo", response={200: ClientOut, 404: MessageOut}, auth=ClientOnlyAuth(), summary="Remove a foto do Cliente logado (volta para a foto padrão).")
@@ -442,7 +497,45 @@ def upload_client_photo_router(request, photo: UploadedFile = File(...)):
 def delete_client_photo_router(request):
     try:
         user: User = request.auth
-        client_updated = delete_client_profile_photo(user=user)
-        return 200, client_updated
+        client_updated = delete_client_profile_photo(user_id=user.user_id)
+        return Status(200, client_updated)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
+
+# ── Admin: perfil (nome completo + foto) ────────────────────────────────────
+
+@router.patch("/update-admin-profile", response={200: AdminProfileOut, 404: MessageOut, 400: MessageOut}, auth=AdminOnlyAuth(), summary="Atualiza o perfil (nome completo) do Admin logado.")
+@ratelimit(key="ip", rate="20/h", block=True)
+def update_admin_profile_router(request, payload: AdminProfileUpdateIn):
+    try:
+        user: User = request.auth
+        admin_updated = update_admin_profile(user_id=user.user_id, payload=payload)
+        return Status(200, admin_updated)
+    except UserNotFound as e:
+        return Status(404, {"detail": str(e)})
+    except DjangoValidationError as e:
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
+
+
+@router.post("/upload-admin-photo", response={200: AdminProfileOut, 400: MessageOut, 404: MessageOut}, auth=AdminOnlyAuth(), summary="Upload da foto do Admin logado.")
+@ratelimit(key="user", rate="10/h", block=True)
+def upload_admin_photo_router(request, photo: UploadedFile = File(...)):
+    try:
+        user: User = request.auth
+        admin_updated = upload_admin_profile_photo(user_id=user.user_id, photo=photo)
+        return Status(200, admin_updated)
+    except UserNotFound as e:
+        return Status(404, {"detail": str(e)})
+    except InvalidImageFile as e:
+        return Status(400, {"detail": str(e)})
+
+
+@router.delete("/delete-admin-photo", response={200: AdminProfileOut, 404: MessageOut}, auth=AdminOnlyAuth(), summary="Remove a foto do Admin logado (volta para a foto padrão).")
+@ratelimit(key="user", rate="10/h", block=True)
+def delete_admin_photo_router(request):
+    try:
+        user: User = request.auth
+        admin_updated = delete_admin_profile_photo(user_id=user.user_id)
+        return Status(200, admin_updated)
+    except UserNotFound as e:
+        return Status(404, {"detail": str(e)})

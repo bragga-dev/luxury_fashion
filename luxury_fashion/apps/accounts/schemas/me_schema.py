@@ -6,8 +6,10 @@ from ninja import Schema
 
 from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.accounts.models.client_model import Client
+from luxury_fashion.apps.accounts.models.admin_model import AdminProfile
 from luxury_fashion.apps.accounts.schemas.user_schema import UserOut
 from luxury_fashion.apps.accounts.schemas.client_schema import GenderEnum
+from luxury_fashion.apps.accounts.schemas.admin_schema import AdminProfileOut
 
 
 
@@ -42,13 +44,14 @@ class ClientProfileOut(Schema):
 class MeOut(Schema):
     user:     UserOut
     client:   Optional[ClientProfileOut]   = None
-   
+    admin:    Optional[AdminProfileOut]    = None
 
     @classmethod
     def from_user(cls, user: User) -> "MeOut":
-        client   = getattr(user, "client_profile", None)
+        client = getattr(user, "client_profile", None)
+        admin  = getattr(user, "admin_profile", None)
         return cls(
             user=UserOut.from_orm(user),
             client=ClientProfileOut.from_orm(client) if client else None,
-            
+            admin=AdminProfileOut.from_orm(admin) if admin else None,
         )

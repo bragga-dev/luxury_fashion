@@ -35,6 +35,13 @@ def update_item_quantity(item: CartItem, quantity: int) -> CartItem:
     return item
 
 
+def update_item_unit_price(item: CartItem, unit_price) -> CartItem:
+    """Ressincroniza o preço unitário do item com o preço atual da variante."""
+    item.unit_price_item = unit_price
+    item.save(update_fields=["unit_price_item"])
+    return item
+
+
 def remove_item(item: CartItem) -> None:
     cart = item.cart_id
     item.delete()

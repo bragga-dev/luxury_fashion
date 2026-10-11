@@ -29,7 +29,8 @@ from luxury_fashion.apps.products.selectors.product_selector import get_product_
 from luxury_fashion.apps.products.selectors.product_variant_selector import (
     get_variant_by_id,
     get_variants_by_product,
-    variant_exists_for_product_size_color_gender,
+    variant_exists_for_product_size_color,
+    variant_exists_for_sku,
 )
 
 
@@ -63,19 +64,21 @@ def create_variant_for_admin(product_id: uuid.UUID, data: VariantCreateIn) -> Va
     if product is None:
         raise ProductNotFound()
 
-    if variant_exists_for_product_size_color_gender(
-        product_id=product_id, size=data.size, color=data.color, gender=data.gender,
+    if data.sku and variant_exists_for_sku(sku=data.sku):
+        raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
+
+    if variant_exists_for_product_size_color(
+        product_id=product_id, size=data.size, color=data.color,
     ):
         raise VariantAlreadyExists()
 
     variant = create_variant(
         product_id=product,
+        sku=data.sku,
         price=data.price,
         size=data.size,
         color=data.color,
-        gender=data.gender,
         stock=data.stock,
-        description=data.description,
     )
     return VariantOut.from_orm(variant)
 
@@ -88,13 +91,15 @@ def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> Va
         if value is not None
     }
 
-    touches_combo = any(k in fields for k in ("size", "color", "gender"))
+    if fields.get("sku") and variant_exists_for_sku(sku=fields["sku"], exclude_id=variant_id):
+        raise VariantAlreadyExists("Já existe uma variante com esse SKU.")
+
+    touches_combo = any(k in fields for k in ("size", "color"))
     if touches_combo:
         size = fields.get("size", variant.size)
         color = fields.get("color", variant.color)
-        gender = fields.get("gender", variant.gender)
-        if variant_exists_for_product_size_color_gender(
-            product_id=variant.product_id_id, size=size, color=color, gender=gender, exclude_id=variant_id,
+        if variant_exists_for_product_size_color(
+            product_id=variant.product_id_id, size=size, color=color, exclude_id=variant_id,
         ):
             raise VariantAlreadyExists()
 

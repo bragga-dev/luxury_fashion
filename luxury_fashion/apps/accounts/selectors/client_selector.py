@@ -1,18 +1,16 @@
 """
 Queries de Cliente - Funções para buscar e filtrar clientes.
 """
-from typing import Optional, List, Dict, Any
-from uuid import UUID
-from datetime import date, datetime
-from django.db.models import Q, QuerySet, Count, Avg, Sum
-from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404
-from phonenumbers import parse, is_valid_number, PhoneNumberType
-from phonenumbers import parse, format_number, PhoneNumberFormat
 import re
+from typing import Optional, List, Dict
+from uuid import UUID
+from datetime import date
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from phonenumbers import parse, format_number, PhoneNumberFormat
+from phonenumbers.phonenumberutil import NumberParseException
 
 from luxury_fashion.apps.accounts.models.client_model import Client
-from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.constants.gender import Gender
 
 
@@ -242,7 +240,7 @@ def get_client_by_phone(phone: str) -> Optional[Client]:
         parsed = parse(clean_phone, "BR")
         e164 = format_number(parsed, PhoneNumberFormat.E164)
         return Client.objects.filter(phone=e164).first()
-    except:
+    except NumberParseException:
         return Client.objects.filter(phone__contains=clean_phone).first()
 
 
@@ -564,16 +562,13 @@ def normalize_phone_for_search(phone: str) -> str:
     
     if not phone:
         return ''
-    
-    import re
     clean = re.sub(r'[^\d+]', '', phone)
     
     try:
         parsed = parse(clean, "BR")
         return format_number(parsed, PhoneNumberFormat.E164)
-    except:
+    except NumberParseException:
         return clean
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Bulk Operations
