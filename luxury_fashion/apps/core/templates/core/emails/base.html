@@ -27,10 +27,8 @@
      com os templates filhos).
 
      Blocos Django: title, preheader, extra_styles, content, footer_links.
-       footer_links (opcional) — exemplo no template filho:
-         {% block footer_links %}
-           <a href="https://...">Loja</a><a href="https://...">Instagram</a>
-         {% endblock %}
+       footer_links (opcional) — no template filho, declare o bloco
+         footer_links com os links (ex.: Loja, Instagram) em tags <a>.
 
      Utilitários novos (opt-in nos filhos):
        .rule         filete vinho curto, centralizado, p/ abaixo de .heading
