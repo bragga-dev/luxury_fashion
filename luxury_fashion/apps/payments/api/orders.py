@@ -3,6 +3,8 @@ Order endpoints — checkout do carrinho e consulta de pedidos do cliente
 autenticado.
 """
 import uuid
+from datetime import date
+from typing import Optional
 
 from ninja import Router, Status
 from django_ratelimit.decorators import ratelimit
@@ -20,12 +22,27 @@ from luxury_fashion.apps.core.exceptions.shipping import (
     FrenetAPIError,
     FrenetInsufficientBalanceError,
     FrenetPartnerTokenMissingError,
+    OrderDeliveryNotAllowed,
     OrderLabelNotAllowed,
 )
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth, ClientOnlyAuth, ClientCompleteProfileAuth
-from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
-from luxury_fashion.apps.payments.schemas.order_schema import OrderCancelIn, OrderCreateIn, OrderOut
+from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut, PageOut
+from luxury_fashion.apps.core.utils.pagination import PAGE_SIZE_DEFAULT
+from luxury_fashion.apps.payments.schemas.order_admin_schema import OrderAdminListOut, OrderAdminOut, OrderSummaryOut
+from luxury_fashion.apps.payments.schemas.order_schema import (
+    OrderCancelIn,
+    OrderCreateIn,
+    OrderOut,
+    ShippingStatusEnum,
+    StatusOrderEnum,
+)
+from luxury_fashion.apps.payments.services.order_admin_service import (
+    get_order_for_admin,
+    get_orders_summary_for_admin,
+    list_orders_for_admin,
+)
+from luxury_fashion.apps.payments.services.order_delivery_service import mark_order_as_delivered
 from luxury_fashion.apps.payments.services.order_service import (
     cancel_order_by_client,
     create_order_from_cart,
@@ -70,6 +87,72 @@ def create_order_router(request, payload: OrderCreateIn):
     except FrenetAPIError as e:
         return Status(502, {"detail": str(e)})
 
+
+# ── Admin ────────────────────────────────────────────────────────────────────
+# Rotas /admin/* ANTES das rotas com {order_id}, senão "admin" seria lido como id.
+
+@router.get(
+    "/admin/list",
+    response={200: PageOut[OrderAdminListOut]},
+    auth=AdminOnlyAuth(),
+    summary="Lista pedidos de todos os clientes (admin — paginado, com filtros)",
+    description=(
+        "Filtros: `order_status`, `shipping_status`, `search` (código, e-mail ou nome do cliente), "
+        "`date_from`/`date_to` (data de criação, YYYY-MM-DD)."
+    ),
+)
+@ratelimit(key="user", rate="60/m", block=True)
+def list_orders_admin_router(
+    request,
+    page: int = 1,
+    page_size: int = PAGE_SIZE_DEFAULT,
+    order_status: Optional[StatusOrderEnum] = None,
+    shipping_status: Optional[ShippingStatusEnum] = None,
+    search: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+):
+    return Status(
+        200,
+        list_orders_for_admin(
+            page=page,
+            page_size=page_size,
+            order_status=order_status.value if order_status else None,
+            shipping_status=shipping_status.value if shipping_status else None,
+            search=search,
+            date_from=date_from,
+            date_to=date_to,
+        ),
+    )
+
+
+@router.get(
+    "/admin/summary",
+    response={200: OrderSummaryOut},
+    auth=AdminOnlyAuth(),
+    summary="Totais do dashboard de pedidos (admin)",
+    description="Receita e ticket médio consideram só pedidos pagos e não reembolsados (COMPLETED).",
+)
+@ratelimit(key="user", rate="60/m", block=True)
+def orders_summary_admin_router(request, date_from: Optional[date] = None, date_to: Optional[date] = None):
+    return Status(200, get_orders_summary_for_admin(date_from=date_from, date_to=date_to))
+
+
+@router.get(
+    "/admin/{order_id}",
+    response={200: OrderAdminOut, 404: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Detalhe de qualquer pedido (admin)",
+)
+@ratelimit(key="user", rate="60/m", block=True)
+def get_order_admin_router(request, order_id: uuid.UUID):
+    try:
+        return Status(200, get_order_for_admin(order_id))
+    except OrderNotFound as e:
+        return Status(404, {"detail": str(e)})
+
+
+# ── Cliente ──────────────────────────────────────────────────────────────────
 
 @router.get(
     "",
@@ -141,3 +224,21 @@ def generate_label(request, order_id: uuid.UUID):
             "label_url": order.shipping_label_url,
         },
     )
+
+
+@router.post(
+    "/{order_id}/mark-delivered",
+    response={200: OrderAdminOut, 404: MessageOut, 409: MessageOut},
+    auth=AdminOnlyAuth(),
+    summary="Marca o pedido como entregue — uso administrativo (fallback do webhook da Frenet)",
+    description="Idempotente. Exige pedido pago e etiqueta já gerada. Notifica o cliente.",
+)
+@ratelimit(key="user", rate="30/m", block=True)
+def mark_order_delivered_router(request, order_id: uuid.UUID):
+    try:
+        mark_order_as_delivered(order_id)
+        return Status(200, get_order_for_admin(order_id))
+    except OrderNotFound as e:
+        return Status(404, {"detail": str(e)})
+    except OrderDeliveryNotAllowed as e:
+        return Status(409, {"detail": str(e)})

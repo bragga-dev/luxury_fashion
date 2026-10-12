@@ -53,6 +53,7 @@ class Order(models.Model):
     shipping_label_url = models.URLField(blank=True, null=True)
     shipping_status = models.CharField(max_length=30, choices=ShippingStatus.choices, default=ShippingStatus.PENDING)
     shipped_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(_("Entregue em"), blank=True, null=True)
 
     class Meta:
         verbose_name = _("Pedido")
@@ -62,6 +63,7 @@ class Order(models.Model):
             models.Index(fields=["order_status"]),
             models.Index(fields=["created_at"]),
             models.Index(fields=["user_id"]),
+            models.Index(fields=["shipping_status"]),
         ]
 
     def __str__(self):
@@ -101,3 +103,9 @@ class Order(models.Model):
         self._ensure_transition_allowed(self.StatusOrder.REFUNDED)
         self.order_status = self.StatusOrder.REFUNDED
         self.save(update_fields=["order_status", "updated_at"])
+
+    def mark_delivered(self) -> None:
+        """Marca a entrega. As pré-condições de negócio ficam no service (order_delivery_service)."""
+        self.shipping_status = self.ShippingStatus.DELIVERED
+        self.delivered_at = self.delivered_at or timezone.now()
+        self.save(update_fields=["shipping_status", "delivered_at", "updated_at"])

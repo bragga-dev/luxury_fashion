@@ -16,4 +16,12 @@ app.conf.beat_schedule = {
         "task": "luxury_fashion.apps.payments.tasks.expire_pending_orders.expire_pending_orders",
         "schedule": crontab(minute="*/30"),
     },
+    "cleanup-old-notifications": {
+        "task": "luxury_fashion.apps.notifications.tasks.cleanup_notifications.cleanup_old_notifications",
+        "schedule": crontab(hour=3, minute=30),
+    },
+    "send-review-requests": {
+        "task": "luxury_fashion.apps.notifications.tasks.send_review_requests.send_review_requests",
+        "schedule": crontab(hour=12, minute=0),
+    },
 }

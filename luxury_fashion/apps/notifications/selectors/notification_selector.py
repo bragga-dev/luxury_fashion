@@ -1,4 +1,5 @@
 """Selectors de Notification — só leitura."""
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -32,6 +33,34 @@ def get_order_ref(order_id: UUID):
     from luxury_fashion.apps.payments.models.order_model import Order
 
     return Order.objects.only("order_id", "user_id", "code").filter(order_id=order_id).first()
+
+
+def get_order_ids_for_review_request(*, delivered_after: datetime, delivered_before: datetime, limit: int = 500) -> list[UUID]:
+    """
+    Pedidos entregues na janela (delivered_after < entrega <= delivered_before) que ainda têm
+    ao menos um item sem avaliação e que AINDA não receberam o convite. O anti-join com as
+    notificações evita reprocessar (e bater no unique do dedupe) a cada execução da task.
+    """
+    from luxury_fashion.apps.payments.models.order_model import Order
+
+    already_invited = Notification.objects.filter(
+        type=Notification.NotificationType.REVIEW_REQUEST,
+        target_type=Notification.TargetType.ORDER,
+        target_id__isnull=False,
+    ).values("target_id")
+
+    return list(
+        Order.objects.filter(
+            order_status=Order.StatusOrder.COMPLETED,
+            shipping_status=Order.ShippingStatus.DELIVERED,
+            delivered_at__gt=delivered_after,
+            delivered_at__lte=delivered_before,
+            items__reviews__isnull=True,
+        )
+        .exclude(order_id__in=already_invited)
+        .values_list("order_id", flat=True)
+        .distinct()[:limit]
+    )
 
 
 def get_active_admin_ids(*, exclude_id: Optional[UUID] = None) -> list[UUID]:

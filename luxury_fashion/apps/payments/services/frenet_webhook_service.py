@@ -13,6 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from luxury_fashion.apps.notifications.services.notification_service import (
+    notify_order_delivered,
     notify_order_in_transit,
     notify_order_shipped,
 )
@@ -61,13 +62,28 @@ def handle_status_update(order_code: str, shipment_id: int, shipment_status: int
     if order is None:
         return
 
+    # Código de "entregue" da Frenet: configurável (FRENET_SHIPMENT_DELIVERED_STATUS) porque o
+    # valor deve ser confirmado na doc/painel da Frenet. Sem ele, a entrega é marcada pelo admin.
+    delivered_code = getattr(settings, "FRENET_SHIPMENT_DELIVERED_STATUS", None)
+
     if shipment_status == SHIPMENT_POSTED:
+        if order.shipping_status in (Order.ShippingStatus.IN_TRANSIT, Order.ShippingStatus.DELIVERED):
+            # Evento atrasado/duplicado: não regride um pedido que já avançou.
+            logger.info("Webhook Frenet: POSTED ignorado, pedido %s já está %s.", order_code, order.shipping_status)
+            return
         was_shipped = order.shipping_status == Order.ShippingStatus.SHIPPED
         order.shipping_status = Order.ShippingStatus.SHIPPED
         order.shipped_at = order.shipped_at or timezone.now()
         order.save(update_fields=["shipping_status", "shipped_at", "updated_at"])
         if not was_shipped:
             notify_order_shipped(order.order_id)
+    elif delivered_code is not None and shipment_status == int(delivered_code):
+        if (
+            order.order_status == Order.StatusOrder.COMPLETED
+            and order.shipping_status != Order.ShippingStatus.DELIVERED
+        ):
+            order.mark_delivered()
+            notify_order_delivered(order.order_id)
     elif shipment_status == SHIPMENT_CANCELLED:
         # Etiqueta cancelada na Frenet (reembolso é lá): libera o pedido para nova geração.
         order.shipping_status = Order.ShippingStatus.PENDING

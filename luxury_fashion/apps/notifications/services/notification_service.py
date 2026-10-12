@@ -242,6 +242,23 @@ def notify_order_in_transit(order_id: UUID) -> None:
     )
 
 
+@_on_commit
+def notify_order_delivered(order_id: UUID) -> None:
+    _notify_client_order(
+        order_id, caller="notify_order_delivered", notification_type=NT.ORDER_DELIVERED, event="delivered",
+        title="Pedido entregue", body="O pedido {code} foi entregue. Esperamos que você goste!",
+    )
+
+
+@_on_commit
+def notify_review_request(order_id: UUID) -> None:
+    """Convite pra avaliar a compra (disparado por task, alguns dias após a entrega)."""
+    _notify_client_order(
+        order_id, caller="notify_review_request", notification_type=NT.REVIEW_REQUEST, event="review_request",
+        title="Como foi sua compra?", body="Avalie os produtos do pedido {code} e ajude outros clientes.",
+    )
+
+
 # =========================================================
 # Pedidos (Order) — admin
 # =========================================================
