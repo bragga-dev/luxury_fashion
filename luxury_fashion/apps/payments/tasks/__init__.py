@@ -1,13 +1,5 @@
-
-from luxury_fashion.apps.notifications.tasks.send_review_requests import send_review_requests 
-from luxury_fashion.apps.payments.tasks.expire_pending_orders import expire_pending_orders
-
-
-
-
-
-__all__ = [
-
-    "send_review_requests",
-    "expire_pending_orders",
-]
+# luxury_fashion/luxury_fashion/apps/payments/tasks/__init__.py
+# Importa os módulos pra o Celery registrar as tasks (autodiscover só carrega o pacote `tasks`).
+# Import de módulo (e não de função) pra não sobrescrever o atributo do pacote e manter válidos os
+# caminhos de mock.patch("...tasks.<modulo>.<nome>") dos testes.
+from . import expire_pending_orders, send_payment_request  # noqa: F401
