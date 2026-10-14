@@ -50,6 +50,12 @@ from luxury_fashion.apps.payments.selectors.order_selector import (
     get_orders_by_user,
 )
 from luxury_fashion.apps.payments.selectors.payment_selector import get_payments_by_order
+from luxury_fashion.apps.payments.tasks.order_notifications import (
+    queue_email,
+    send_order_cancelled_email,
+    send_order_received_email,
+    send_payment_confirmed_email,
+)
 from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
 from luxury_fashion.apps.products.repositories.product_variant_repository import adjust_variant_stock
 
@@ -158,6 +164,7 @@ def _create_order_atomic(user, shipping_address, shipping_option, quoted_fingerp
     )
 
     clear_cart(cart=cart)
+    queue_email(send_order_received_email, order.order_id)
 
     return _order_out_for(user_id=user.user_id, order_id=order.order_id)
 
@@ -214,6 +221,7 @@ def confirm_order_payment(order_id: uuid.UUID) -> bool:
     if any(item.order_item_quantity > locked_variants[item.variant_id_id].stock for item in items):
         canceled_order(order=order, reason="Sem estoque no momento da confirmação do pagamento.")
         notify_order_cancelled_no_stock(order.order_id)
+        queue_email(send_order_cancelled_email, order.order_id, "no_stock")
         return False
 
     for item in items:
@@ -221,6 +229,7 @@ def confirm_order_payment(order_id: uuid.UUID) -> bool:
     completed_order(order=order)
     notify_order_paid(order.order_id)
     notify_admins_new_order_paid(order.order_id)
+    queue_email(send_payment_confirmed_email, order.order_id)
     return True
 
 
@@ -236,6 +245,8 @@ def cancel_order_by_client(user_id: uuid.UUID, order_id: uuid.UUID, reason: str 
 
     # PENDING nunca debitou estoque, então não há o que devolver.
     canceled_order(order=locked, reason=reason)
+    # (sem notificação in-app: o cliente é o autor da ação — mas recebe o e-mail de confirmação)
+    queue_email(send_order_cancelled_email, locked.order_id, "client", reason)
     return _order_out_for(user_id=user_id, order_id=order_id)
 
 
@@ -265,4 +276,5 @@ def expire_pending_order(order_id: uuid.UUID) -> bool:
 
     canceled_order(order=order, reason="Pedido expirado por falta de pagamento.")
     notify_order_expired(order.order_id)
+    queue_email(send_order_cancelled_email, order.order_id, "expired")
     return True

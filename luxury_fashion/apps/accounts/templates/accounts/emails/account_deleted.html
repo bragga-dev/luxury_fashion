@@ -1,0 +1,48 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Conta excluída — {{ store_name }}{% endblock %}
+
+{% block preheader %}Confirmamos a exclusão da sua conta e dos seus dados pessoais.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Privacidade</span>
+    <h1 class="heading">Conta excluída</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Confirmamos que a conta associada a <strong>{{ user_email }}</strong> foi excluída
+        a seu pedido. Seus dados pessoais — perfil, endereços sem pedidos, carrinho,
+        avaliações e mensagens de contato — foram removidos ou anonimizados e você não
+        consegue mais entrar com esse e-mail.
+    </p>
+
+    {% if kept_orders %}
+    <div class="info-box plain">
+        <p class="info-box-title">O que mantemos</p>
+        <p class="info-box-text">
+            Como você tem pedidos, mantemos o registro das compras, dos pagamentos e dos
+            endereços de entrega usados neles, pelo prazo exigido pela legislação fiscal e comercial.
+            Esses dados ficam separados da sua identidade e não são usados para nenhum outro fim.
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="warning-box">
+        <p>
+            <strong>Não foi você?</strong>
+            Fale com a gente imediatamente em
+            <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+        </p>
+    </div>
+
+    <div class="closing-note">
+        <p class="script">Obrigada por ter feito parte.</p>
+        <p class="team">Equipe {{ store_name }}</p>
+    </div>
+
+{% endblock %}

@@ -65,10 +65,10 @@ def resolve_client_display_name(user: User) -> str:
 
 def resolve_actor_display_name(user: Optional[User]) -> str:
     if user is None:
-        return "ÉLUXO MODAS"
+        return settings.STORE_NAME
     if is_client(user):
         return resolve_client_display_name(user)
-    return "ÉLUXO MODAS"
+    return settings.STORE_NAME
 
 def format_datetime_br(value: datetime) -> str:
     """Formata data/hora no padrão pt-BR usado em todos os e-mails: dd/mm/aaaa às HH:MM."""

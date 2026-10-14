@@ -426,6 +426,11 @@ FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
 # FRONTEND
 # =========================================================
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
+# Nome da loja nos e-mails (assunto/corpo). O base.html dos e-mails é o layout; o nome vem daqui.
+STORE_NAME = env("STORE_NAME", default="Gama Fashion")
+# Quem recebe o aviso de nova mensagem do formulário de contato.
+CONTACT_NOTIFICATION_EMAIL = env("CONTACT_NOTIFICATION_EMAIL", default=ADMIN_EMAIL)
 BACKEND_URL  = env("BACKEND_URL",  default="http://localhost:8000")
 
 

@@ -13,6 +13,7 @@ from luxury_fashion.apps.core.exceptions import OrderNotFound
 from luxury_fashion.apps.core.exceptions.shipping import OrderDeliveryNotAllowed
 from luxury_fashion.apps.notifications.services.notification_service import notify_order_delivered
 from luxury_fashion.apps.payments.models.order_model import Order
+from luxury_fashion.apps.payments.tasks.order_notifications import queue_email, send_order_delivered_email
 
 
 @transaction.atomic
@@ -33,4 +34,5 @@ def mark_order_as_delivered(order_id: uuid.UUID) -> Order:
 
     order.mark_delivered()
     notify_order_delivered(order.order_id)
+    queue_email(send_order_delivered_email, order.order_id)
     return order

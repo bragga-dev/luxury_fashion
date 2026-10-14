@@ -1,0 +1,56 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Estorno solicitado — pedido {{ order_code }} — {{ store_name }}{% endblock %}
+
+{% block preheader %}Solicitamos o estorno de R$ {{ refund_value|floatformat:2 }} do pedido {{ order_code }}.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Estorno</span>
+    <h1 class="heading">Estorno solicitado</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    {% if kind == "late_payment" %}
+    <p class="body-text">
+        Recebemos um pagamento para o pedido <strong>{{ order_code }}</strong>, mas o pedido não pôde
+        ser concluído (já estava cancelado ou os itens esgotaram). Por isso solicitamos o
+        <strong>estorno integral</strong> do valor pago.
+    </p>
+    {% else %}
+    <p class="body-text">
+        Solicitamos o estorno do pagamento do pedido <strong>{{ order_code }}</strong>.
+    </p>
+    {% endif %}
+
+    <div class="info-box gold">
+        <p class="info-box-title">Detalhes do estorno</p>
+
+        <div class="payment-row">
+            <span class="payment-label">Valor</span><br>
+            <span class="payment-value amount">R$ {{ refund_value|floatformat:2 }}</span>
+        </div>
+
+        <div class="payment-row">
+            <span class="payment-label">Forma de pagamento</span><br>
+            <span class="payment-value">{{ payment_billing_type|upper }}</span>
+        </div>
+
+        <div class="payment-row">
+            <span class="payment-label">Pedido</span><br>
+            <span class="payment-value">{{ order_code }}</span>
+        </div>
+    </div>
+
+    <p class="body-text">
+        O prazo para o valor aparecer na sua conta ou fatura depende da forma de pagamento e do banco.
+        Se passar do esperado, fale com a gente em
+        <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+    </p>
+
+    {% include "core/emails/_cta.html" with url=client_orders_url label="Ver meus pedidos" %}
+
+{% endblock %}

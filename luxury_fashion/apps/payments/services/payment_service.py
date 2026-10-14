@@ -29,6 +29,7 @@ from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
 from luxury_fashion.apps.notifications.services.notification_service import notify_order_refunded
+from luxury_fashion.apps.payments.tasks.order_notifications import queue_email, send_payment_refunded_email
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import (
     refunded_order,
@@ -187,6 +188,7 @@ def _do_refund(payment: Payment, value: Decimal | None, description: str | None)
     asaas = AsaasClient()
     response = asaas.refund_payment(payment.asaas_payment_id, value=value, description=description)
     payment = update_payment(payment, **map_refund_response(response))
+    queue_email(send_payment_refunded_email, payment.payment_id, "requested", str(value) if value is not None else None)
     return PaymentOut.from_orm(payment)
 
 
@@ -228,6 +230,7 @@ def _auto_refund_orphan_payment(payment: Payment, order: Order) -> None:
             description=f"Estorno automático: pedido {order.code} já estava {order.order_status}.",
         )
         update_payment(payment, **map_refund_response(response))
+        queue_email(send_payment_refunded_email, payment.payment_id, "late_payment")
     except AsaasAPIError:
         logger.exception("Falha ao estornar pagamento órfão %s — tratar manualmente.", payment.asaas_payment_id)
 
@@ -258,5 +261,10 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
             order.refresh_from_db()
             _auto_refund_orphan_payment(payment, order)
     elif status in _REFUND_STATUSES and order.order_status != Order.StatusOrder.REFUNDED:
-        refunded_order(order=order)
-        notify_order_refunded(order.order_id)
+        if order.can_transition_to(Order.StatusOrder.REFUNDED):
+            refunded_order(order=order)
+            notify_order_refunded(order.order_id)
+        else:
+            # Estorno de pagamento que nunca concluiu o pedido (ex.: pago depois de cancelado/expirado, ou
+            # sem estoque): o pedido continua CANCELLED — não há transição nem "pedido reembolsado" a avisar.
+            logger.info("Estorno %s recebido; pedido %s segue %s (sem transição).", asaas_payment_id, order.code, order.order_status)

@@ -4,6 +4,7 @@ Tasks Celery — redefinição de senha.
 
 import logging
 from celery import shared_task
+from django.conf import settings
 
 from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.accounts.services.verification import build_password_reset_url
@@ -36,7 +37,7 @@ def send_password_reset_email(self, user_id: str, uid: str, token: str) -> None:
         }
 
         send_html_email(
-            subject="Redefinição de senha — ÉLUXO MODAS",
+            subject=f"Redefinição de senha — {settings.STORE_NAME}",
             to_email=user.email,
             template_name="accounts/emails/password_reset.html",
             context=context,

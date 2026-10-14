@@ -12,6 +12,11 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from luxury_fashion.apps.payments.tasks.order_notifications import (
+    queue_email,
+    send_order_delivered_email,
+    send_order_shipped_email,
+)
 from luxury_fashion.apps.notifications.services.notification_service import (
     notify_order_delivered,
     notify_order_in_transit,
@@ -77,6 +82,7 @@ def handle_status_update(order_code: str, shipment_id: int, shipment_status: int
         order.save(update_fields=["shipping_status", "shipped_at", "updated_at"])
         if not was_shipped:
             notify_order_shipped(order.order_id)
+            queue_email(send_order_shipped_email, order.order_id)
     elif delivered_code is not None and shipment_status == int(delivered_code):
         if (
             order.order_status == Order.StatusOrder.COMPLETED
@@ -84,6 +90,7 @@ def handle_status_update(order_code: str, shipment_id: int, shipment_status: int
         ):
             order.mark_delivered()
             notify_order_delivered(order.order_id)
+            queue_email(send_order_delivered_email, order.order_id)
     elif shipment_status == SHIPMENT_CANCELLED:
         # Etiqueta cancelada na Frenet (reembolso é lá): libera o pedido para nova geração.
         order.shipping_status = Order.ShippingStatus.PENDING

@@ -49,7 +49,13 @@ from luxury_fashion.apps.accounts.tasks.verification_account import (
     send_verification_email,
 )
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
+from luxury_fashion.apps.accounts.tasks.account_notifications import (
+    send_account_deleted_email,
+    send_account_status_email,
+    send_welcome_email,
+)
 from luxury_fashion.apps.core.exceptions.auth import InvalidGoogleToken, InvalidPassword, TermsNotAccepted
+from luxury_fashion.apps.products.emails.product_context import resolve_client_display_name
 from luxury_fashion.apps.core.exceptions.user import UserAlreadyExists
 
 
@@ -186,6 +192,7 @@ def login_or_register_client_google(
             raise TermsNotAccepted()
         user = create_user(email=email, password=None, role=User.UserRole.CLIENT)
         _record_consents(user, accepted_terms=True, marketing_opt_in=marketing_opt_in, ip=ip)
+        transaction.on_commit(lambda: send_welcome_email.delay(str(user.pk)), robust=True)
         create_client(
             user,
             first_name=claims.get("given_name"),
@@ -219,6 +226,7 @@ def deactivate_account(user_id: uuid.UUID, performed_by=None, reason="Desativaç
  
     user.is_active = False
     user.save(update_fields=["is_active"])
+    transaction.on_commit(lambda: send_account_status_email.delay(str(user.pk), "deactivated"), robust=True)
  
     return user
 
@@ -234,7 +242,9 @@ def reactivate_user(user_id: uuid.UUID, performed_by=None) -> User:
         logger.warning(f"Reativação abortada: usuário {user_id} já está ativo")
         raise UserNotFound("Usuário já está ativo.")
 
-    return activate_user(user)
+    reactivated = activate_user(user)
+    transaction.on_commit(lambda: send_account_status_email.delay(str(reactivated.pk), "reactivated"), robust=True)
+    return reactivated
 
 
 @transaction.atomic
@@ -253,6 +263,7 @@ def delete_own_account(user: User, password: str) -> None:
     Contas admin não podem ser excluídas por aqui.
     """
     from luxury_fashion.apps.cart.models.cart_model import Cart
+    from luxury_fashion.apps.notifications.models.notification_model import Notification
     from luxury_fashion.apps.payments.models.order_model import Order
     from luxury_fashion.apps.reviews.models.reviews_model import Reviews
     from luxury_fashion.apps.website.models.contact_model import Contact
@@ -264,6 +275,9 @@ def delete_own_account(user: User, password: str) -> None:
         raise InvalidPassword("Senha incorreta. Não foi possível confirmar a exclusão da conta.")
 
     original_email = user.email
+    client_name = resolve_client_display_name(user)
+    kept_orders = Order.objects.filter(user_id=user).exists()
+    transaction.on_commit(lambda: send_account_deleted_email.delay(original_email, client_name, kept_orders), robust=True)
     revoke_all_tokens(user)
     Contact.objects.filter(email__iexact=original_email).delete()
 
@@ -271,13 +285,14 @@ def delete_own_account(user: User, password: str) -> None:
     if profile is not None:
         remove_client_photo(profile)  # volta pra foto padrão (NUNCA apaga a padrão compartilhada)
 
-    if not Order.objects.filter(user_id=user).exists():
+    if not kept_orders:
         delete_user(user)
         return
 
     # ── tem pedidos: anonimiza e mantém só o necessário ──
     Reviews.objects.filter(user_id=user).delete()
     Cart.objects.filter(user_id=user).delete()
+    Notification.objects.filter(recipient=user).delete()  # sino do cliente (no hard-delete sai por CASCADE)
 
     if profile is not None:
         profile.addresses.filter(orders__isnull=True).delete()

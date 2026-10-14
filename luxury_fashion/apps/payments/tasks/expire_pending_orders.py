@@ -12,13 +12,16 @@ from django.utils import timezone
 
 from luxury_fashion.apps.core.exceptions import AsaasAPIError
 from luxury_fashion.apps.payments.models.order_model import Order
-from luxury_fashion.apps.payments.services.order_service import expire_pending_order
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task
 def expire_pending_orders() -> int:
+    # import tardio: o pacote payments.tasks é importado pelo order_service (que dispara e-mails),
+    # então importar o service aqui no topo criaria um ciclo.
+    from luxury_fashion.apps.payments.services.order_service import expire_pending_order
+
     cutoff = timezone.now() - timedelta(hours=settings.ORDER_PENDING_EXPIRATION_HOURS)
     order_ids = list(
         Order.objects.filter(order_status=Order.StatusOrder.PENDING, created_at__lt=cutoff)

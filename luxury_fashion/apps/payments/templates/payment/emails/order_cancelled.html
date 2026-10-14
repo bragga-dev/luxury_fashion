@@ -1,0 +1,55 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Pedido {{ order_code }} cancelado — {{ store_name }}{% endblock %}
+
+{% block preheader %}{% if kind == "no_stock" %}Pedido {{ order_code }} cancelado por falta de estoque. Você será reembolsada(o).{% else %}Seu pedido {{ order_code }} foi cancelado.{% endif %}{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Pedido cancelado</span>
+    <h1 class="heading">Pedido cancelado</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    {% if kind == "expired" %}
+    <p class="body-text">
+        O pedido <strong>{{ order_code }}</strong> foi cancelado porque o pagamento não foi
+        identificado dentro do prazo. Nenhum valor foi cobrado e nada mais precisa ser feito.
+    </p>
+    {% elif kind == "no_stock" %}
+    <p class="body-text">
+        Sentimos muito: no momento em que seu pagamento foi confirmado, um ou mais itens do pedido
+        <strong>{{ order_code }}</strong> já tinham esgotado, por isso não conseguimos concluí-lo.
+    </p>
+    <div class="info-box gold">
+        <p class="info-box-title">E o seu dinheiro?</p>
+        <p class="info-box-text">
+            O valor pago será <strong>estornado integralmente</strong> na mesma forma de pagamento.
+            Você receberá outro e-mail confirmando o estorno.
+        </p>
+    </div>
+    {% else %}
+    <p class="body-text">
+        Conforme solicitado, o pedido <strong>{{ order_code }}</strong> foi cancelado.
+        Nenhum valor foi cobrado.
+    </p>
+    {% endif %}
+
+    <div style="text-align: center; margin: 4px 0 24px;">
+        <span class="status-badge cancelled">Cancelado</span>
+    </div>
+
+    {% if kind == "client" and cancel_reason %}
+    <div class="reason-box">
+        <p><strong>Motivo informado:</strong> {{ cancel_reason }}</p>
+    </div>
+    {% endif %}
+
+    {% include "core/emails/_order_summary.html" %}
+
+    {% include "core/emails/_cta.html" with url=store_url label="Voltar à loja" %}
+
+{% endblock %}

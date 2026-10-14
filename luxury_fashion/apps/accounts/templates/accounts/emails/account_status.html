@@ -1,0 +1,39 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}{% if kind == "reactivated" %}Conta reativada{% else %}Conta desativada{% endif %} — {{ store_name }}{% endblock %}
+
+{% block preheader %}{% if kind == "reactivated" %}Sua conta foi reativada e você já pode entrar.{% else %}Sua conta foi desativada. Entenda o que fazer.{% endif %}{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Segurança da conta</span>
+    <h1 class="heading">{% if kind == "reactivated" %}Conta reativada{% else %}Conta desativada{% endif %}</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    {% if kind == "reactivated" %}
+    <p class="body-text">
+        Sua conta <strong>{{ user_email }}</strong> foi reativada. Você já pode entrar com
+        seu e-mail e sua senha e retomar suas compras e seus pedidos.
+    </p>
+
+    {% include "core/emails/_cta.html" with url=store_url label="Voltar à loja" %}
+    {% else %}
+    <p class="body-text">
+        Sua conta <strong>{{ user_email }}</strong> foi desativada e os acessos anteriores
+        foram encerrados. Enquanto estiver desativada, não é possível entrar nem fazer novos pedidos.
+    </p>
+
+    <div class="warning-box">
+        <p>
+            <strong>Acha que foi um engano?</strong>
+            Responda este e-mail ou escreva para
+            <a href="mailto:{{ support_email }}">{{ support_email }}</a> e vamos analisar.
+        </p>
+    </div>
+    {% endif %}
+
+{% endblock %}

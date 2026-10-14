@@ -1,0 +1,36 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Pagamento confirmado — pedido {{ order_code }} — {{ store_name }}{% endblock %}
+
+{% block preheader %}Pagamento confirmado! Já estamos separando o seu pedido {{ order_code }}.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label gold">Pagamento confirmado</span>
+    <h1 class="heading">Pedido confirmado!</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Recebemos o pagamento do pedido <strong>{{ order_code }}</strong>. Agora é com a gente:
+        vamos separar seus itens com todo o cuidado e avisar assim que o pedido for enviado,
+        com o código de rastreio.
+    </p>
+
+    <div style="text-align: center; margin: 4px 0 24px;">
+        <span class="status-badge success">Pagamento confirmado</span>
+    </div>
+
+    {% include "core/emails/_order_summary.html" %}
+
+    {% include "core/emails/_cta.html" with url=client_orders_url label="Acompanhar pedido" secondary_url=store_url secondary_label="Voltar à loja" %}
+
+    <div class="closing-note">
+        <p class="script">Obrigada pela confiança.</p>
+        <p class="team">Equipe {{ store_name }}</p>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Pedido {{ order_code }} enviado — {{ store_name }}{% endblock %}
+
+{% block preheader %}Seu pedido {{ order_code }} está a caminho.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label gold">A caminho</span>
+    <h1 class="heading">Seu pedido foi enviado!</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Boas notícias: o pedido <strong>{{ order_code }}</strong> foi postado e já está a caminho do seu endereço.
+    </p>
+
+    <div class="info-box gold">
+        <p class="info-box-title">Envio</p>
+
+        {% if order_shipping_service %}
+        <div class="payment-row">
+            <span class="payment-label">Serviço</span><br>
+            <span class="payment-value">{{ order_shipping_service }}</span>
+        </div>
+        {% endif %}
+
+        {% if order_delivery_days %}
+        <div class="payment-row">
+            <span class="payment-label">Prazo estimado</span><br>
+            <span class="payment-value">{{ order_delivery_days }} {% if order_delivery_days == 1 %}dia útil{% else %}dias úteis{% endif %}</span>
+        </div>
+        {% endif %}
+
+        <div class="payment-row">
+            <span class="payment-label">Código de rastreio</span><br>
+            {% if order_tracking_code %}
+            <span class="payment-value" style="font-family: 'Courier New', monospace; letter-spacing: 2px;">{{ order_tracking_code }}</span>
+            {% else %}
+            <span class="payment-value">Será disponibilizado em instantes em “Meus pedidos”.</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include "core/emails/_order_summary.html" %}
+
+    {% include "core/emails/_cta.html" with url=client_orders_url label="Acompanhar pedido" %}
+
+    <div class="closing-note">
+        <p class="script">Boas compras e bons treinos!</p>
+        <p class="team">Equipe {{ store_name }}</p>
+    </div>
+
+{% endblock %}

@@ -19,6 +19,12 @@ def send_html_email(
 ) -> None:
     """Envia email com HTML e fallback em texto puro."""
     from_email = from_email or settings.DEFAULT_FROM_EMAIL
+    # Contexto comum a todos os e-mails (os filhos usam {{ store_name }} em vez de nome fixo).
+    context = {
+        "store_name": settings.STORE_NAME,
+        "support_email": settings.DEFAULT_REPLY_TO_EMAIL,
+        **context,
+    }
     html_content = render_to_string(template_name, context)
     text_content = strip_tags(html_content)
 

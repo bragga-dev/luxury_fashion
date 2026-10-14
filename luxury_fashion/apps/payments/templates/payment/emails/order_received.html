@@ -1,0 +1,40 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Pedido {{ order_code }} recebido — {{ store_name }}{% endblock %}
+
+{% block preheader %}Recebemos seu pedido {{ order_code }}. Falta só o pagamento para confirmá-lo.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Pedido recebido</span>
+    <h1 class="heading">Recebemos seu pedido!</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Seu pedido <strong>{{ order_code }}</strong> foi registrado em
+        {{ order_created_at|date:"d/m/Y" }} às {{ order_created_at|time:"H:i" }}.
+        Para confirmá-lo, finalize o pagamento até
+        <strong>{{ payment_deadline|date:"d/m/Y" }} às {{ payment_deadline|time:"H:i" }}</strong>.
+    </p>
+
+    <div style="text-align: center; margin: 4px 0 24px;">
+        <span class="highlight-badge">Aguardando pagamento</span>
+    </div>
+
+    {% include "core/emails/_order_summary.html" %}
+
+    {% include "core/emails/_cta.html" with url=client_orders_url label="Pagar agora" secondary_url=store_url secondary_label="Voltar à loja" %}
+
+    <div class="warning-box">
+        <p>
+            <strong>Atenção:</strong>
+            Os itens só são separados <strong>depois da confirmação do pagamento</strong>.
+            Pedidos sem pagamento até o prazo acima são cancelados automaticamente.
+        </p>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Recebemos sua mensagem — {{ store_name }}{% endblock %}
+
+{% block preheader %}Recebemos sua mensagem e responderemos em breve.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Fale conosco</span>
+    <h1 class="heading">Recebemos sua mensagem</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ contact_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Obrigada por entrar em contato com a <strong>{{ store_name }}</strong>. Sua mensagem chegou
+        e nossa equipe vai responder o mais breve possível, neste e-mail (<strong>{{ contact_email }}</strong>).
+    </p>
+
+    <div class="info-box plain">
+        <p class="info-box-title">Assunto: {{ contact_subject }}</p>
+    </div>
+
+    <div class="message-box">
+        <p>{{ contact_message|linebreaksbr }}</p>
+    </div>
+
+    {% include "core/emails/_cta.html" with url=store_url label="Voltar à loja" %}
+
+    <div class="warning-box">
+        <p>
+            <strong>Atenção:</strong>
+            Este é um aviso automático de recebimento. Não foi você que enviou a mensagem?
+            Pode ignorar este e-mail.
+        </p>
+    </div>
+
+{% endblock %}

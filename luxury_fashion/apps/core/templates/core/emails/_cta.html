@@ -1,0 +1,13 @@
+{# Botão de ação. Uso: {% include "core/emails/_cta.html" with url=... label="..." secondary_url=... secondary_label="..." %} #}
+<div class="cta-wrap">
+    <!--[if mso]>
+    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ url }}" style="height:50px;v-text-anchor:middle;width:240px;" arcsize="8%" stroke="f" fillcolor="#8e1b3f">
+        <w:anchorlock/>
+        <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:2px;">{{ label|upper }}</center>
+    </v:roundrect>
+    <![endif]-->
+    <!--[if !mso]><!-->
+    <a href="{{ url }}" class="cta-btn">{{ label }}</a>
+    <!--<![endif]-->
+    {% if secondary_url %}<a href="{{ secondary_url }}" class="cta-btn-secondary">{{ secondary_label }}</a>{% endif %}
+</div>
