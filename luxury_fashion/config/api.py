@@ -1,10 +1,10 @@
-# luxury_fashion/luxury_fashion/config/api.py
 from ninja import NinjaAPI, Swagger
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.exceptions import AuthenticationFailed as JWTAuthenticationFailed
 from ninja.errors import ValidationError, AuthenticationError
 from django.http import HttpRequest, JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
+from luxury_fashion.apps.core.utils.validation_errors import format_validation_errors
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
 from luxury_fashion.apps.accounts.api.address import router as address_router
@@ -75,7 +75,7 @@ api.add_router("/products/", product_image_router, tags=["Imagens de Produto"])
 def validation_error(request: HttpRequest, exc: ValidationError):
     return api.create_response(
         request,
-        {"detail": exc.errors},
+        {"detail": "Dados inválidos.", "errors": format_validation_errors(exc.errors)},
         status=422,
     )
 

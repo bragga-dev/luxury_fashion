@@ -1,3 +1,4 @@
+# luxury_fashion/requirements.txt
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.5
 aiosignal==1.4.0
@@ -78,6 +79,7 @@ redis==7.4.0
 requests==2.34.1
 rsa==4.9.1
 s3transfer==0.17.0
+sentry-sdk==2.72.0
 six==1.17.0
 sqlparse==0.5.5
 tinycss2==1.5.1
