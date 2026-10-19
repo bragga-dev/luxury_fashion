@@ -6,6 +6,7 @@ por isso aqui só tem schema de saída.
 """
 import uuid
 from decimal import Decimal
+from typing import Optional
 
 from ninja import Schema
 
@@ -16,6 +17,9 @@ from luxury_fashion.apps.products.schemas.product_variant_schema import VariantO
 class OrderItemOut(Schema):
     order_item_id: uuid.UUID
     variant: VariantOut
+    product_name: str
+    size: Optional[str] = None
+    color: Optional[str] = None
     order_item_quantity: int
     order_item_price: Decimal
     subtotal: Decimal
@@ -25,6 +29,10 @@ class OrderItemOut(Schema):
         return cls(
             order_item_id=item.order_item_id,
             variant=VariantOut.from_orm(item.variant_id),
+            # snapshot da compra; itens antigos (sem snapshot) caem no valor atual da variante
+            product_name=item.product_name or item.variant_id.product_id.product_name,
+            size=item.variant_size or item.variant_id.size or None,
+            color=item.variant_color or item.variant_id.color or None,
             order_item_quantity=item.order_item_quantity,
             order_item_price=item.order_item_price,
             subtotal=item.subtotal(),
