@@ -21,6 +21,15 @@ def _pick_cover_image(images: list) -> Optional["ImageOut"]:
     return ImageOut.from_orm(cover or images[0])
 
 
+def _rating_fields(product: Product) -> dict:
+    """Lê as anotações `avg_rating`/`total_reviews` do selector (ausentes em objetos não anotados)."""
+    avg = getattr(product, "avg_rating", None)
+    return {
+        "average_rating": round(Decimal(str(avg)), 1) if avg is not None else Decimal("0.0"),
+        "total_reviews": getattr(product, "total_reviews", None) or 0,
+    }
+
+
 class ProductCreateIn(Schema):
     product_name: str
     product_category_id: uuid.UUID
@@ -90,6 +99,8 @@ class ProductListOut(Schema):
     min_price: Optional[Decimal] = None
     max_price: Optional[Decimal] = None
     in_stock: bool = False
+    average_rating: Decimal = Decimal("0.0")  # só avaliações autorizadas; 0.0 = sem avaliações
+    total_reviews: int = 0
 
     @classmethod
     def from_orm(cls, product: Product) -> "ProductListOut":
@@ -113,6 +124,7 @@ class ProductListOut(Schema):
             min_price=min(prices) if prices else None,
             max_price=max(prices) if prices else None,
             in_stock=any(v.in_stock for v in variants),
+            **_rating_fields(product),
         )
 
 
@@ -142,6 +154,7 @@ class ProductOut(ProductListOut):
             min_price=min(prices) if prices else None,
             max_price=max(prices) if prices else None,
             in_stock=any(v.in_stock for v in variants),
+            **_rating_fields(product),
             created_at=product.created_at.isoformat(),
             updated_at=product.updated_at.isoformat(),
         )

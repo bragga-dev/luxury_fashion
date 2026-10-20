@@ -13,6 +13,8 @@ class CampaignImageUpdateIn(Schema):
     focus_x: Optional[int] = None
     focus_y: Optional[int] = None
     zoom: Optional[float] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
 
 
 class CampaignImageOut(Schema):
@@ -25,6 +27,8 @@ class CampaignImageOut(Schema):
     focus_x: int = 50
     focus_y: int = 50
     zoom: float = 1.0
+    title: str = ""
+    subtitle: str = ""
 
     @classmethod
     def from_orm(cls, campaign_image: CampaignImage) -> "CampaignImageOut":
@@ -42,4 +46,7 @@ class CampaignImageOut(Schema):
             focus_x=campaign_image.focus_x,
             focus_y=campaign_image.focus_y,
             zoom=campaign_image.zoom,
+            title=campaign_image.title,
+            subtitle=campaign_image.subtitle,
+
         )

@@ -28,6 +28,8 @@ from luxury_fashion.apps.core.exceptions.cart_exception import (
     ShippingOptionUnavailable,
 )
 from luxury_fashion.apps.core.exceptions.permissions import PermissionDenied
+from luxury_fashion.apps.core.schemas.deafult_schema import PageOut
+from luxury_fashion.apps.core.utils.pagination import PAGE_SIZE_DEFAULT, paginate_queryset
 from luxury_fashion.apps.notifications.services.notification_service import (
     notify_admins_new_order_paid,
     notify_order_cancelled_no_stock,
@@ -41,6 +43,7 @@ from luxury_fashion.apps.payments.repositories.order_repository import (
     bulk_create_order_items,
     canceled_order,
     completed_order,
+    refunded_order,
     create_order,
 )
 from luxury_fashion.apps.payments.repositories.payment_repository import update_payment
@@ -68,6 +71,8 @@ def _validate_shipping_address(user_id: uuid.UUID, shipping_address_id: uuid.UUI
     address = get_address_by_id(address_id=shipping_address_id)
     if address is None or address.client_id_id != client.client_id:
         raise PermissionDenied("Endereço não pertence ao cliente autenticado.")
+    if address.is_archived:
+        raise PermissionDenied("Este endereço não está mais disponível. Selecione outro endereço de entrega.")
     return address
 
 
@@ -186,6 +191,11 @@ def list_orders_for_client(user_id: uuid.UUID) -> list[OrderOut]:
     return [OrderOut.from_orm(order) for order in orders]
 
 
+def page_orders_for_client(user_id: uuid.UUID, page: int = 1, page_size: int = PAGE_SIZE_DEFAULT) -> PageOut[OrderOut]:
+    """Pedidos do cliente, mais recentes primeiro, paginados."""
+    return paginate_queryset(get_orders_by_user(user_id=user_id), page, page_size, OrderOut.from_orm)
+
+
 def _lock_order(order_id: uuid.UUID) -> Order | None:
     """Trava a linha do pedido (evita corrida com o webhook de pagamento)."""
     return Order.objects.select_for_update().filter(order_id=order_id).first()
@@ -230,6 +240,36 @@ def confirm_order_payment(order_id: uuid.UUID) -> bool:
     notify_order_paid(order.order_id)
     notify_admins_new_order_paid(order.order_id)
     queue_email(send_payment_confirmed_email, order.order_id)
+    return True
+
+
+@transaction.atomic
+def refund_order(order_id: uuid.UUID) -> bool:
+    """
+    Pagamento estornado → pedido COMPLETED vira REFUNDED.
+
+    Estoque: o pagamento debitou, então o estorno devolve — MAS só se a mercadoria ainda não saiu
+    (sem etiqueta e envio pendente). Depois de etiquetado/enviado o produto está fora do estoque
+    físico; a reposição passa a ser manual (ajuste de estoque pelo admin quando a devolução chegar).
+
+    Idempotente: devolve False se o pedido não pode mais ir pra REFUNDED (já estornado, etc.).
+    """
+    order = _lock_order(order_id)
+    if order is None or not order.can_transition_to(Order.StatusOrder.REFUNDED):
+        return False
+
+    refunded_order(order=order)
+
+    goods_still_here = not order.frenet_order_id and order.shipping_status == Order.ShippingStatus.PENDING
+    if goods_still_here:
+        items = list(order.items.all())
+        variant_ids = sorted({item.variant_id_id for item in items})  # ordenado: evita deadlock
+        locked_variants = {
+            v.variant_id: v
+            for v in ProductVariant.objects.select_for_update().filter(variant_id__in=variant_ids)
+        }
+        for item in items:
+            adjust_variant_stock(variant=locked_variants[item.variant_id_id], delta=item.order_item_quantity)
     return True
 
 

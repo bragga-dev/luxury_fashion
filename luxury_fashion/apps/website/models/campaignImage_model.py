@@ -21,6 +21,8 @@ class CampaignImage(models.Model):
     focus_x = models.PositiveSmallIntegerField(default=50, validators=[MaxValueValidator(100)])
     focus_y = models.PositiveSmallIntegerField(default=50, validators=[MaxValueValidator(100)])
     zoom = models.FloatField(default=1.0, validators=[MinValueValidator(1.0), MaxValueValidator(3.0)])
+    title = models.CharField(max_length=120, blank=True, default="")
+    subtitle = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(_("Criada em"), auto_now_add=True)
 
     class Meta:

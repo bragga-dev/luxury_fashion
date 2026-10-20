@@ -61,6 +61,42 @@ class ReviewsOut(Schema):
             created_at=reviews.created_at,
         )
 
+def _public_author_name(user) -> str:
+    """Nome curto para exibição pública (ex.: "Maria S."). Nunca expõe e-mail nem IDs."""
+    client = getattr(user, "client_profile", None)
+    first = (getattr(client, "first_name", None) or "").strip()
+    last = (getattr(client, "last_name", None) or "").strip()
+    if not first:
+        return "Cliente"
+    return f"{first} {last[0]}." if last else first
+
+
+class ReviewsPublicOut(Schema):
+    """Avaliação exibida na vitrine — sem dados pessoais (e-mail, user_id, role...)."""
+    reviews_id: UUID
+    author_name: str
+    reviews: ReviewsEnum
+    reviews_label: str
+    comment: Optional[str] = None
+    size: Optional[str] = None
+    color: Optional[str] = None
+    created_at: datetime
+
+    @classmethod
+    def from_orm(cls, reviews: Reviews) -> "ReviewsPublicOut":
+        variant = reviews.order_item_id.variant_id
+        return cls(
+            reviews_id=reviews.reviews_id,
+            author_name=_public_author_name(reviews.user_id),
+            reviews=reviews.reviews,
+            reviews_label=reviews.get_reviews_display(),
+            comment=reviews.comment,
+            size=getattr(variant, "size", None),
+            color=getattr(variant, "color", None),
+            created_at=reviews.created_at,
+        )
+
+
 class ReviewsPrivateOut(Schema):
     reviews_id: UUID
     order_item: OrderItemOut

@@ -53,9 +53,12 @@ from luxury_fashion.apps.reviews.selectors.reviews_selector import (
     get_reviews_by_user,
     validate_user_already_rated_order_item,
 )
+from luxury_fashion.apps.core.schemas.deafult_schema import PageOut
+from luxury_fashion.apps.core.utils.pagination import paginate_queryset
 from luxury_fashion.apps.reviews.schemas.reviews_schema import (
     ReviewsCreateIn,
     ReviewsOut,
+    ReviewsPublicOut,
     ReviewsPrivateOut,
     ReviewsUpdateIn,
 )
@@ -109,6 +112,8 @@ def _get_reviewable_order_item(user_id: UUID, order_item_id: UUID):
         raise OrderNotFound()
     if order_item.order_id.order_status != Order.StatusOrder.COMPLETED:
         raise OrderItemNotReviewable()
+    if order_item.order_id.shipping_status != Order.ShippingStatus.DELIVERED:
+        raise OrderItemNotReviewable("Só é possível avaliar depois que o pedido for entregue.")
     return order_item
 
 
@@ -186,19 +191,23 @@ def delete_own_review(user_id: UUID, reviews_id: UUID) -> None:
 # Público (visitantes — leitura)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def list_public_reviews_for_order_item(order_item_id: UUID) -> list[ReviewsOut]:
+def list_public_reviews_for_order_item(order_item_id: UUID) -> list[ReviewsPublicOut]:
     """Lista a avaliação autorizada de um item de pedido específico, se houver."""
     reviews = get_reviews_by_order_item(order_item_id=order_item_id)
     if reviews is None or not reviews.is_authorized:
         return []
-    return [ReviewsOut.from_orm(reviews)]
+    return [ReviewsPublicOut.from_orm(reviews)]
 
 
-def list_public_reviews_for_product(product_id: UUID) -> list[ReviewsOut]:
-    """Lista as avaliações autorizadas de todos os itens de um produto."""
+def list_public_reviews_for_product(product_id: UUID, page: int = 1, page_size: int = 20) -> PageOut[ReviewsPublicOut]:
+    """Lista paginada das avaliações autorizadas de todos os itens de um produto."""
     order_item_ids = get_order_item_by_variant(product_id=product_id)
-    reviews = Reviews.objects.filter(order_item_id__in=order_item_ids, is_authorized=True).order_by("-created_at")
-    return [ReviewsOut.from_orm(r) for r in reviews]
+    qs = (
+        Reviews.objects.filter(order_item_id__in=order_item_ids, is_authorized=True)
+        .select_related("user_id__client_profile", "order_item_id__variant_id")
+        .order_by("-created_at")
+    )
+    return paginate_queryset(qs, page, page_size, ReviewsPublicOut.from_orm)
 
 
 def get_product_rating_summary(product_id: UUID) -> dict:
