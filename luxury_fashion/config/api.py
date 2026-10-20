@@ -37,7 +37,7 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
 logger = logging.getLogger("django")
 
 api = NinjaAPI(
-    title="Gama Fashion - Moda Fitness",
+    title="Fit Store Carla Gama",
     version="1.0.0",
     description="E-commerce de moda Fitness masculina e feminina.",
     auth=[JWTAuth(), AdminOnlyAuth(), ClientOnlyAuth(), VerifiedUserAuth(), ActiveUserAuth()],

@@ -12,6 +12,9 @@ class OrderItem(models.Model):
     variant_id = models.ForeignKey("products.ProductVariant", on_delete=models.PROTECT, related_name="order_items")
     order_item_quantity = models.PositiveIntegerField(_("Quantidade"), default=1, validators=[MinValueValidator(1)])
     order_item_price = models.DecimalField(_("Preço unitário"), max_digits=10, decimal_places=2, default=0)
+    product_name = models.CharField(_("Nome do produto (na compra)"), max_length=100, blank=True, default="")
+    variant_size = models.CharField(_("Tamanho (na compra)"), max_length=10, blank=True, default="")
+    variant_color = models.CharField(_("Cor (na compra)"), max_length=30, blank=True, default="")
 
     class Meta:
         verbose_name = _("Item do pedido")

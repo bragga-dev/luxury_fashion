@@ -19,6 +19,7 @@ from luxury_fashion.apps.core.exceptions import (
     VariantNotFound,
 )
 from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
+from luxury_fashion.apps.core.exceptions.products_exception import VariantInUse
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
 from luxury_fashion.apps.products.schemas.product_shipping_schema import (
@@ -102,9 +103,10 @@ def update_variant_router(request, variant_id: uuid.UUID, payload: VariantUpdate
 
 @router.delete(
     "/variants/{variant_id}",
-    response={200: MessageOut, 404: MessageOut},
+    response={200: MessageOut, 404: MessageOut, 409: MessageOut},
     auth=AdminOnlyAuth(),
     summary="Exclui uma variante",
+    description="Variante que já foi vendida não pode ser excluída (409) — desative-a.",
 )
 @ratelimit(key="user", rate="20/h", block=True)
 def delete_variant_router(request, variant_id: uuid.UUID):
@@ -113,6 +115,8 @@ def delete_variant_router(request, variant_id: uuid.UUID):
         return Status(200, {"detail": "Variante excluída com sucesso."})
     except VariantNotFound as e:
         return Status(404, {"detail": str(e)})
+    except VariantInUse as e:
+        return Status(409, {"detail": str(e)})
 
 
 @router.post(

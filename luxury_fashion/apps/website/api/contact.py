@@ -7,7 +7,7 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import Router, Status
 
 from luxury_fashion.apps.core.exceptions import ContactNameAlreadyExists, ContactNotFound
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth
@@ -43,11 +43,11 @@ router = Router()
 @ratelimit(key="ip", rate="5/m", block=True)
 def create_contact_router(request, payload: ContactCreateIn):
     try:
-        return 201, create_contact_message(payload)
+        return Status(201, create_contact_message(payload))
     except ContactNameAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -69,7 +69,7 @@ def list_contacts_router(
     search: Optional[str] = None,
 ):
     qs = list_contacts_queryset(status=status.value if status else None, search=search)
-    return 200, paginate_queryset(qs, page, page_size, ContactOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, ContactOut.from_orm))
 
 
 @router.get(
@@ -81,9 +81,9 @@ def list_contacts_router(
 @ratelimit(key="user", rate="60/m", block=True)
 def detail_contact_router(request, contact_id: uuid.UUID):
     try:
-        return 200, get_contact_for_admin(contact_id)
+        return Status(200, get_contact_for_admin(contact_id))
     except ContactNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.patch(
@@ -95,9 +95,9 @@ def detail_contact_router(request, contact_id: uuid.UUID):
 @ratelimit(key="user", rate="60/m", block=True)
 def update_contact_router(request, contact_id: uuid.UUID, payload: ContactUpdateIn):
     try:
-        return 200, update_contact_status_for_admin(contact_id, payload.status.value)
+        return Status(200, update_contact_status_for_admin(contact_id, payload.status.value))
     except ContactNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.delete(
@@ -110,6 +110,6 @@ def update_contact_router(request, contact_id: uuid.UUID, payload: ContactUpdate
 def delete_contact_router(request, contact_id: uuid.UUID):
     try:
         delete_contact_for_admin(contact_id)
-        return 200, {"detail": "Contato excluído com sucesso."}
+        return Status(200, {"detail": "Contato excluído com sucesso."})
     except ContactNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})

@@ -92,3 +92,11 @@ class OrderOut(Schema):
             created_at=order.created_at,
             updated_at=order.updated_at,
         )
+
+
+class LabelOut(Schema):
+    """Resultado da geração de etiqueta (admin)."""
+    success: bool
+    frenet_shipment_id: Optional[str] = None
+    tracking_code: Optional[str] = None
+    label_url: Optional[str] = None

@@ -11,12 +11,12 @@ from typing import Optional
 from ninja import Schema
 
 from luxury_fashion.apps.payments.models.order_item_model import OrderItem
-from luxury_fashion.apps.products.schemas.product_variant_schema import VariantOut
+from luxury_fashion.apps.products.schemas.product_variant_schema import VariantWithProductOut
 
 
 class OrderItemOut(Schema):
     order_item_id: uuid.UUID
-    variant: VariantOut
+    variant: VariantWithProductOut
     product_name: str
     size: Optional[str] = None
     color: Optional[str] = None
@@ -28,8 +28,7 @@ class OrderItemOut(Schema):
     def from_orm(cls, item: OrderItem) -> "OrderItemOut":
         return cls(
             order_item_id=item.order_item_id,
-            variant=VariantOut.from_orm(item.variant_id),
-            # snapshot da compra; itens antigos (sem snapshot) caem no valor atual da variante
+            variant=VariantWithProductOut.from_orm(item.variant_id),
             product_name=item.product_name or item.variant_id.product_id.product_name,
             size=item.variant_size or item.variant_id.size or None,
             color=item.variant_color or item.variant_id.color or None,

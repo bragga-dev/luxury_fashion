@@ -6,7 +6,7 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import File, Router, UploadedFile
+from ninja import File, Router, Status, UploadedFile
 
 from luxury_fashion.apps.core.exceptions import (
     CategoryHasProducts,
@@ -54,7 +54,7 @@ def list_categories_router(
     active_only: bool = True,
 ):
     qs = list_categories_queryset(active_only=active_only)
-    return 200, paginate_queryset(qs, page, page_size, ProductCategoryOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, ProductCategoryOut.from_orm))
 
 
 @router.get(
@@ -66,9 +66,9 @@ def list_categories_router(
 @ratelimit(key="ip", rate="60/m", block=True)
 def detail_category_router(request, category_id: uuid.UUID):
     try:
-        return 200, get_category_for_all(category_id)
+        return Status(200, get_category_for_all(category_id))
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ── Escrita (admin) ───────────────────────────────────────────────────────────
@@ -83,11 +83,11 @@ def detail_category_router(request, category_id: uuid.UUID):
 def create_category_router(request, payload: ProductCategoryCreateIn):
     try:
         category = create_category_for_admin(payload)
-        return 201, category
+        return Status(201, category)
     except CategoryNameAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.patch(
@@ -100,13 +100,13 @@ def create_category_router(request, payload: ProductCategoryCreateIn):
 def update_category_router(request, category_id: uuid.UUID, payload: ProductCategoryUpdateIn):
     try:
         category = update_category_for_admin(category_id, payload)
-        return 200, category
+        return Status(200, category)
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except CategoryNameAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.delete(
@@ -120,11 +120,11 @@ def update_category_router(request, category_id: uuid.UUID, payload: ProductCate
 def delete_category_router(request, category_id: uuid.UUID):
     try:
         delete_category_for_admin(category_id)
-        return 200, {"detail": "Categoria excluída com sucesso."}
+        return Status(200, {"detail": "Categoria excluída com sucesso."})
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except CategoryHasProducts as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
 
 
 @router.post(
@@ -136,9 +136,9 @@ def delete_category_router(request, category_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def activate_category_router(request, category_id: uuid.UUID):
     try:
-        return 200, activate_category_for_admin(category_id)
+        return Status(200, activate_category_for_admin(category_id))
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -150,9 +150,9 @@ def activate_category_router(request, category_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def deactivate_category_router(request, category_id: uuid.UUID):
     try:
-        return 200, deactivate_category_for_admin(category_id)
+        return Status(200, deactivate_category_for_admin(category_id))
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ── Imagem (admin) ────────────────────────────────────────────────────────────
@@ -166,11 +166,11 @@ def deactivate_category_router(request, category_id: uuid.UUID):
 @ratelimit(key="user", rate="20/h", block=True)
 def upload_category_image_router(request, category_id: uuid.UUID, image: UploadedFile = File(...)):
     try:
-        return 200, upload_category_image_for_admin(category_id, image)
+        return Status(200, upload_category_image_for_admin(category_id, image))
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except InvalidImageFile as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 @router.delete(
@@ -182,6 +182,6 @@ def upload_category_image_router(request, category_id: uuid.UUID, image: Uploade
 @ratelimit(key="user", rate="20/h", block=True)
 def remove_category_image_router(request, category_id: uuid.UUID):
     try:
-        return 200, remove_category_image_for_admin(category_id)
+        return Status(200, remove_category_image_for_admin(category_id))
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
