@@ -20,6 +20,7 @@ from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_rou
 from luxury_fashion.apps.payments.api.frenet_webhook import router as frenet_webhook_router
 from luxury_fashion.apps.reviews.api.reviews import router as reviews_router
 from luxury_fashion.apps.notifications.api.notifications import router as notifications_router
+from luxury_fashion.apps.chat.api.chat import router as chat_router
 from luxury_fashion.apps.website.api.campaign import router as campaign_router
 from luxury_fashion.apps.website.api.contact import router as contact_router
 from django_ratelimit.exceptions import Ratelimited
@@ -63,6 +64,7 @@ api.add_router("/", payments_router, tags=["Payments"])
 api.add_router("/address/", address_router, tags=["Address"])
 api.add_router("/reviews/", reviews_router, tags=["Reviews"])
 api.add_router("/notifications/", notifications_router, tags=["Notifications"])
+api.add_router("/chat", chat_router, tags=["Chat"])
 api.add_router("/campaigns/", campaign_router, tags=["Campaigns"])
 api.add_router("/contact/", contact_router, tags=["Contact"])
 api.add_router("/products/", variant_router, tags=["Variantes"])
