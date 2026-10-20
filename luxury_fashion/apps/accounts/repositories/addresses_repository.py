@@ -14,7 +14,7 @@ def create_address(
     city: Optional[str] = None,
     state: BrazilianStateEnum = None,
     country: Optional[str] = None,
-   
+    is_preferential: Optional[bool] = None,
 ) -> AddressesClient:
     fields = {
         "cep": cep,
@@ -29,6 +29,8 @@ def create_address(
     fields = {k: v for k, v in fields.items() if v is not None}
 
     address = AddressesClient(client_id=client_id, **fields)
+    if is_preferential is not None:
+        address.is_preferential = is_preferential
     address.full_clean()
     address.save()
     return address
@@ -47,6 +49,14 @@ def update_address(address: AddressesClient, **fields) -> AddressesClient:
 
 def delete_address(address: AddressesClient) -> None:
     address.delete()
+
+
+def archive_address(address: AddressesClient) -> AddressesClient:
+    """Esconde o endereço do cliente sem apagar a linha (pedidos o referenciam)."""
+    address.is_archived = True
+    address.is_preferential = False
+    address.save(update_fields=["is_archived", "is_preferential"])
+    return address
 
 
 def update_status_address_up(address: AddressesClient) -> AddressesClient:

@@ -1,9 +1,8 @@
-
 import uuid
 from typing import Optional
 
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import Router, Status
 
 from luxury_fashion.apps.accounts.schemas.user_schema import (
     MessageOut,
@@ -39,7 +38,7 @@ def list_users_router(
     is_active: Optional[bool] = None,
 ):
     qs = list_users_admin(search=search, role=role.value if role else None, is_active=is_active)
-    return 200, paginate_queryset(qs, page, page_size, UserAdminOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, UserAdminOut.from_orm))
 
 
 @router.get(
@@ -52,5 +51,5 @@ def list_users_router(
 def detail_user_router(request, user_id: uuid.UUID):
     user = get_user_with_related(user_id)
     if not user:
-        return 404, {"detail": "Usuário não encontrado."}
-    return 200, UserAdminOut.from_orm(user)
+        return Status(404, {"detail": "Usuário não encontrado."})
+    return Status(200, UserAdminOut.from_orm(user))

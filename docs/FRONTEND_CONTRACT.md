@@ -67,3 +67,17 @@ npx orval --input ./openapi.json --output ./src/api
 
 ## 7. Admin de pedidos
 `GET /api/orders/admin/list` (filtros `order_status`, `shipping_status`, `search`, `date_from`, `date_to`), `GET /api/orders/admin/summary`, `GET /api/orders/admin/{order_id}`, `POST /api/orders/{order_id}/mark-delivered` (409 se não pago ou sem etiqueta).
+
+## 8. Vitrine, avaliações e carrinho
+- `GET /api/products/`: filtros `search`, `product_category_id`, `gender`, `size`, `color`, `in_stock_only`, `min_price`, `max_price`. Tamanho, cor, estoque e preço valem para a **mesma variante**. `sort` ∈ `recent | name | price_asc | price_desc | rating`.
+- `ProductListOut`/`ProductOut` trazem `average_rating` (string decimal, `"0.0"` = sem avaliações) e `total_reviews` — só avaliações autorizadas. Não precisa chamar `/reviews/products/{id}/summary` por card.
+- `GET /api/reviews/products/{product_id}` é **paginado** (`PageOut`) e público; cada item tem `author_name` (ex.: `Maria S.`), nota, comentário, `size`, `color`. Não existe e-mail nem ID de usuário nessa resposta.
+- Só é possível avaliar item de pedido **entregue** (`shipping_status = delivered`); antes disso a API responde 409.
+- O carrinho (`CartOut`) só tem `total_price`. Frete **não** mora no carrinho: cotar em `POST /api/cart/shipping/quote` e enviar `shipping_service_code` no checkout.
+
+## 9. Pedidos, endereços e estoque
+- `GET /api/orders/` é **paginado**. `order_status = completed` significa **pago** (rótulo sugerido: "Pago"); o andamento da entrega vem de `shipping_status`.
+- `OrderItemOut` tem `product_name`, `size`, `color` congelados na compra (use esses, não os de `variant`, para exibir histórico).
+- Endereço já usado em pedido nunca é alterado: `PATCH /api/address/my-addresses/{id}` devolve um endereço **novo (outro `address_id`)** e o antigo some da lista. `DELETE` do mesmo tipo de endereço responde 204 e apenas o esconde. Sempre use o `address_id` da resposta.
+- Excluir produto/variante já vendidos → **409** (desative em vez de excluir).
+- Estorno de pedido pago ainda sem etiqueta devolve o estoque; depois de etiquetado/enviado a reposição é manual (ajuste de estoque).- Itens de carrinho e de pedido (`CartItemOut.variant`, `OrderItemOut.variant`) são `VariantWithProductOut`: além dos campos da variante trazem `product_id` (link `/produtos/{id}`), `product_name` e `cover_image_url` (capa; `null` se o produto não tem imagem). Para histórico de pedido, prefira `OrderItemOut.product_name/size/color` (congelados na compra).

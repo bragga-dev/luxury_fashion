@@ -47,6 +47,14 @@ class AddressesClient(models.Model):
     state = models.CharField(_("Estado"), max_length=2, choices=BrazilianState)
     country = models.CharField(_("País"), max_length=100, default="Brasil")
     is_preferential = models.BooleanField(_("Preferencial"), default=True)
+    is_archived = models.BooleanField(
+        _("Arquivado"),
+        default=False,
+        help_text=_(
+            "Endereço já usado em pedido que o cliente 'excluiu' ou editou: some da lista do cliente, "
+            "mas continua existindo porque o pedido referencia esta linha (histórico imutável)."
+        ),
+    )
 
     def __str__(self):
         return f"{self.street} {self.number}, {self.neighborhood}, {self.city} {self.state} {self.cep}"

@@ -6,7 +6,7 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import Router, Status
 
 
 from luxury_fashion.apps.accounts.schemas.user_schema import MessageOut
@@ -61,9 +61,9 @@ def list_my_addresses_router(request):
     try:
         user: User = request.auth
         addresses = get_addresses_for_client(user_id=user.user_id)
-        return 200, addresses
+        return Status(200, addresses)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.get(
@@ -83,9 +83,9 @@ def count_my_addresses_router(request):
     try:
         user: User = request.auth
         count = get_addresses_count_for_client(user_id=user.user_id)
-        return 200, {"count": count}
+        return Status(200, {"count": count})
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ── Busca Individual ──────────────────────────────────────────────────────────
@@ -111,11 +111,11 @@ def detail_my_address_router(request, address_id: uuid.UUID):
             user_id=user.user_id,
             address_id=address_id
         )
-        return 200, address
+        return Status(200, address)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
 
 
 @router.get(
@@ -137,10 +137,10 @@ def get_my_preferential_address_router(request):
         user: User = request.auth
         address = get_preferential_address_for_client(user_id=user.user_id)
         if address is None:
-            return 404, {"detail": "Nenhum endereço preferencial encontrado."}
-        return 200, address
+            return Status(404, {"detail": "Nenhum endereço preferencial encontrado."})
+        return Status(200, address)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.get(
@@ -162,10 +162,10 @@ def get_my_default_address_router(request):
         user: User = request.auth
         address = get_default_address_for_client(user_id=user.user_id)
         if address is None:
-            return 404, {"detail": "Nenhum endereço cadastrado."}
-        return 200, address
+            return Status(404, {"detail": "Nenhum endereço cadastrado."})
+        return Status(200, address)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ── Criação ────────────────────────────────────────────────────────────────────
@@ -188,13 +188,13 @@ def create_my_address_router(request,  payload: AddressCreateIn):
             user_id=user.user_id,
             data=payload
         )
-        return 201, address
+        return Status(201, address)
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 # ── Atualização ──────────────────────────────────────────────────────────────
@@ -221,15 +221,15 @@ def update_my_address_router(request, address_id: uuid.UUID, payload: AddressUpd
             address_id=address_id,
             payload=payload
         )
-        return 200, address
+        return Status(200, address)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 # ── Exclusão ───────────────────────────────────────────────────────────────────
@@ -253,13 +253,13 @@ def delete_my_address_router(request, address_id: uuid.UUID):
     try:
         user: User = request.auth
         delete_address_for_client(user_id=user.user_id, address_id=address_id)
-        return 204, None
+        return Status(204, None)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
     except CannotDeletePreferentialAddress as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 # ── Ativação/Desativação ──────────────────────────────────────────────────────
@@ -285,11 +285,11 @@ def activate_my_address_router(request, address_id: uuid.UUID):
             user_id=user.user_id,
             address_id=address_id
         )
-        return 200, address
+        return Status(200, address)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
 
 
 @router.post(
@@ -313,11 +313,11 @@ def deactivate_my_address_router(request, address_id: uuid.UUID):
             user_id=user.user_id,
             address_id=address_id
         )
-        return 200, address
+        return Status(200, address)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
 
 
 # ── Definição de Preferencial ────────────────────────────────────────────────
@@ -343,7 +343,7 @@ def set_preferential_address_router(request, address_id: uuid.UUID):
         
         # Verifica se o endereço pertence ao cliente
         if not validate_address_belongs_to_client(user_id=user.user_id, address_id=address_id):
-            return 404, {"detail": "Endereço não encontrado ou não pertence ao cliente."}
+            return Status(404, {"detail": "Endereço não encontrado ou não pertence ao cliente."})
         
         # Busca o endereço atual preferencial e desativa
         current_preferential = get_preferential_address_for_client(user_id=user.user_id)
@@ -360,13 +360,13 @@ def set_preferential_address_router(request, address_id: uuid.UUID):
             address_id=address_id
         )
         
-        return 200, address
+        return Status(200, address)
     except (UserNotFound, AddressNotFound) as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 # ── Verificação de existência ───────────────────────────────────────────────
@@ -392,8 +392,8 @@ def check_my_address_exists_router(request, address_id: uuid.UUID):
             user_id=user.user_id,
             address_id=address_id
         )
-        return 200, {"exists": exists}
+        return Status(200, {"exists": exists})
     except UserNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ClientNotFoundError as e:
-        return 403, {"detail": str(e)}
+        return Status(403, {"detail": str(e)})
