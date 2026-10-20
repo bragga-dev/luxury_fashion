@@ -43,6 +43,13 @@ from luxury_fashion.apps.core.exceptions.campaign_exception import CampaignNotFo
 
 from luxury_fashion.apps.core.exceptions.notification_exception import NotificationNotFound
 
+from luxury_fashion.apps.core.exceptions.chat_exception import (
+    ConversationNotFound,
+    MessageNotFound,
+    EmptyMessage,
+    TooManyAttachments,
+)
+
 __all__ = [
     
     "InvalidCredentials",
@@ -95,6 +102,11 @@ __all__ = [
     "CampaignImageNotFound",
     
     "NotificationNotFound",
+
+    "ConversationNotFound",
+    "MessageNotFound",
+    "EmptyMessage",
+    "TooManyAttachments",
 
 
 ]

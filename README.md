@@ -6,3 +6,5 @@ pytest -c pytes.ini luxury_fashion/apps --cov=luxury_fashion/apps --cov-report=t
 
 
 pytest -c pytes.ini luxury_fashion/apps --cov
+
+pytest luxury_fashion/apps --cov

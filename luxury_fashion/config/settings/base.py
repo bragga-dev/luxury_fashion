@@ -36,6 +36,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 # =========================================================
 
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -50,6 +51,7 @@ DJANGO_APPS = [
 # =========================================================
 
 THIRD_PARTY_APPS = [
+    "channels",
     "ninja",
     "ninja_extra",
     "ninja_jwt",
@@ -74,6 +76,7 @@ LOCAL_APPS = [
     "luxury_fashion.apps.reviews",
     "luxury_fashion.apps.website",
     "luxury_fashion.apps.notifications",
+    "luxury_fashion.apps.chat",
 
 ]
 
@@ -143,6 +146,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "luxury_fashion.config.wsgi.application"
 
 ASGI_APPLICATION = "luxury_fashion.config.asgi.application"
+
 
 
 # =========================================================
@@ -486,3 +490,25 @@ FRENET_WEBHOOK_TOKEN_VALUE = env("FRENET_WEBHOOK_TOKEN_VALUE", default="")
 # ==============================================================
 CPF_ENCRYPTION_KEY = env("CPF_ENCRYPTION_KEY")
 CPF_HASH_KEY = env("CPF_HASH_KEY")
+
+# =========================================================
+# REDIS
+# =========================================================
+
+REDIS_URL = env(
+    "REDIS_URL",
+    default="redis://localhost:6379/0",
+)
+
+# =========================================================
+# CHANNELS (WEBSOCKET) — reaproveita o mesmo Redis do Celery/cache
+# =========================================================
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    },
+}
