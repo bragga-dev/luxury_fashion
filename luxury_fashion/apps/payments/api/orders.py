@@ -32,6 +32,7 @@ from luxury_fashion.apps.core.utils.pagination import PAGE_SIZE_DEFAULT
 from luxury_fashion.apps.payments.schemas.order_admin_schema import OrderAdminListOut, OrderAdminOut, OrderSummaryOut
 from luxury_fashion.apps.payments.schemas.order_schema import (
     OrderCancelIn,
+    LabelOut,
     OrderCreateIn,
     OrderOut,
     ShippingStatusEnum,
@@ -47,7 +48,7 @@ from luxury_fashion.apps.payments.services.order_service import (
     cancel_order_by_client,
     create_order_from_cart,
     get_order_for_client,
-    list_orders_for_client,
+    page_orders_for_client,
 )
 from luxury_fashion.apps.payments.services.order_shipping_service import generate_label_for_order
 
@@ -156,14 +157,14 @@ def get_order_admin_router(request, order_id: uuid.UUID):
 
 @router.get(
     "",
-    response={200: list[OrderOut]},
+    response={200: PageOut[OrderOut]},
     auth=ClientOnlyAuth(),
-    summary="Lista os pedidos do cliente autenticado",
+    summary="Lista os pedidos do cliente autenticado (paginado, mais recentes primeiro)",
 )
 @ratelimit(key="user", rate="60/m", block=True)
-def list_orders_router(request):
+def list_orders_router(request, page: int = 1, page_size: int = PAGE_SIZE_DEFAULT):
     user: User = request.auth
-    return Status(200, list_orders_for_client(user.user_id))
+    return Status(200, page_orders_for_client(user.user_id, page, page_size))
 
 
 @router.get(
@@ -185,7 +186,11 @@ def get_order_router(request, order_id: uuid.UUID):
     "/{order_id}/cancel",
     response={200: OrderOut, 404: MessageOut, 409: MessageOut},
     auth=ClientOnlyAuth(),
-    summary="Cancela um pedido pendente e devolve o estoque",
+    summary="Cancela um pedido com pagamento pendente",
+    description=(
+        "Só pedidos PENDING. O estoque não é mexido: ele só é debitado quando o pagamento é efetivado, "
+        "então um pedido pendente nunca reservou nada. Pedido já pago é estornado em `POST /payments/{id}/refund`."
+    ),
 )
 @ratelimit(key="user", rate="10/m", block=True)
 def cancel_order_router(request, order_id: uuid.UUID, payload: OrderCancelIn = None):
@@ -201,10 +206,11 @@ def cancel_order_router(request, order_id: uuid.UUID, payload: OrderCancelIn = N
 
 @router.post(
     "/{order_id}/generate-label",
-    response={200: dict, 400: MessageOut, 404: MessageOut, 502: MessageOut},
+    response={200: LabelOut, 400: MessageOut, 404: MessageOut, 502: MessageOut},
     auth=AdminOnlyAuth(),
     summary="Gera (e paga com o saldo da carteira) a etiqueta de envio na Frenet — uso administrativo",
 )
+@ratelimit(key="user", rate="20/m", block=True)
 def generate_label(request, order_id: uuid.UUID):
     try:
         order = generate_label_for_order(order_id)

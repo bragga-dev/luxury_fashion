@@ -51,11 +51,3 @@ def remove_item(item: CartItem) -> None:
 def clear_cart(cart: Cart) -> None:
     cart.items.all().delete()
     cart.update_totals()
-
-
-def set_item_shipping(item: CartItem, shipping_type: str, shipping_value) -> CartItem:
-    item.shipping_type = shipping_type
-    item.shipping_value = shipping_value
-    item.save(update_fields=["shipping_type", "shipping_value"])
-    item.cart_id.update_totals()
-    return item

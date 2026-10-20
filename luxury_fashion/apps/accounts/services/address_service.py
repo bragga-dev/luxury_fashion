@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from luxury_fashion.apps.accounts.models.addresses_client_model import AddressesClient
 from luxury_fashion.apps.accounts.repositories.addresses_repository import (
+    archive_address,
     create_address,
     delete_address,
     update_address,
@@ -17,6 +18,7 @@ from luxury_fashion.apps.accounts.schemas.address_schema import (
     AddressUpdateIn,
 )
 from luxury_fashion.apps.accounts.selectors.address_selector import (
+    address_has_orders,
     get_address_by_id,
     get_address_is_preferential,
     get_address_by_client,
@@ -46,7 +48,7 @@ def _get_own_client_address(user_id: UUID, address_id: UUID) -> AddressesClient:
     # `address.client_id_id` para o UUID bruto. Comparar `address.client_id`
     # (objeto) com `client.client_id` (UUID) nunca é verdadeiro — por isso
     # toda checagem de posse falhava e retornava "endereço não encontrado".
-    if address is None or address.client_id_id != client.client_id:
+    if address is None or address.is_archived or address.client_id_id != client.client_id:
         raise AddressNotFound()
     return address
 
@@ -79,9 +81,33 @@ def register_address_for_client(user_id: UUID, data: AddressCreateIn) -> Address
     return AddressOut.from_orm(address)
 
 
+_ADDRESS_FIELDS = ("cep", "street", "number", "complement", "neighborhood", "city", "state", "country")
+
+
 def update_address_for_client(user_id: UUID, address_id: UUID, payload: AddressUpdateIn) -> AddressOut:
-    """Atualiza um endereço existente do cliente."""
+    """
+    Atualiza um endereço existente do cliente.
+
+    Endereço já usado em pedido é histórico (o pedido aponta pra esta linha, e o frete foi cotado
+    com este CEP): não é alterado. A edição vira um endereço NOVO (novo address_id) e o antigo é
+    arquivado. Sem pedidos, edita no lugar.
+    """
     address = _get_own_client_address(user_id=user_id, address_id=address_id)
+
+    if address_has_orders(address):
+        merged = {
+            f: (getattr(payload, f) if getattr(payload, f, None) is not None else getattr(address, f))
+            for f in _ADDRESS_FIELDS
+        }
+        was_preferential = address.is_preferential
+        archive_address(address)
+        new_address = create_address(
+            client_id=address.client_id,
+            is_preferential=was_preferential,
+            **merged,
+        )
+        return AddressOut.from_orm(new_address)
+
     address = update_address(
         address=address,
         cep=payload.cep,
@@ -125,7 +151,11 @@ def delete_address_for_client(user_id: UUID, address_id: UUID) -> None:
         if count_addresses_by_client(client_id=client.client_id) > 1:
             raise CannotDeletePreferentialAddress()
 
-    delete_address(address)
+    # Endereço usado em pedido não pode ser apagado (FK PROTECT + dado fiscal): só some da lista.
+    if address_has_orders(address):
+        archive_address(address)
+    else:
+        delete_address(address)
 
 
 # ── Funções de Validação ──────────────────────────────────────────────────

@@ -12,8 +12,6 @@ class CartOut(Schema):
     cart_id: uuid.UUID
     items: List[CartItemOut]
     total_price: Decimal
-    total_shipping: Decimal
-    total_geral: Decimal
 
     @classmethod
     def from_orm(cls, cart: Cart) -> "CartOut":
@@ -22,6 +20,4 @@ class CartOut(Schema):
             cart_id=cart.cart_id,
             items=items,
             total_price=cart.total_price,
-            total_shipping=cart.total_shipping,
-            total_geral=cart.total_geral,
         )

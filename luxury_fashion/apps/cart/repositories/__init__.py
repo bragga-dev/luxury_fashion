@@ -9,7 +9,6 @@ from luxury_fashion.apps.cart.repositories.cart_item_repository import (
     update_item_unit_price,
     remove_item,
     clear_cart,
-    set_item_shipping,
 )
 
 __all__ = [
@@ -21,5 +20,4 @@ __all__ = [
     "update_item_unit_price",
     "remove_item",
     "clear_cart",
-    "set_item_shipping",
 ]
