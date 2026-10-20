@@ -109,7 +109,9 @@ class TestListOrdersEndpoint:
         resp = client.get("/api/orders/", **auth_header(user))
 
         assert resp.status_code == 200
-        assert len(resp.json()) == 1
+        body = resp.json()
+        assert body["total"] == 1
+        assert len(body["items"]) == 1
 
     def test_requires_authentication(self, client):
         resp = client.get("/api/orders/")

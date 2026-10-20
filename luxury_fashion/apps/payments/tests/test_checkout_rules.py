@@ -44,7 +44,8 @@ def test_checkout_nao_mexe_no_carrinho_alem_de_esvaziar_nem_guarda_frete_nele(us
     _checkout(user, address)
     cart.refresh_from_db()
     assert cart.items.count() == 0
-    assert cart.total_shipping == Decimal("0.00")
+    assert cart.total_price == Decimal("0.00")
+    assert not hasattr(cart, "total_shipping")  # frete não mora no carrinho
 
 
 @pytest.mark.parametrize("code", ["999", "NAO-EXISTE"])
