@@ -30,21 +30,36 @@ SHIPMENT_POSTED = 5
 SHIPMENT_CANCELLED = 7
 
 
-def is_valid_webhook_token(headers) -> bool:
+WEBHOOK_TOKEN_QUERY_PARAM = "token"
+
+
+def is_valid_webhook_token(headers, query_params=None) -> bool:
     """
     Os webhooks mexem no status de envio dos pedidos, então NÃO ficam abertos: sem
-    FRENET_WEBHOOK_TOKEN_VALUE configurado só aceitamos em DEBUG (dev). Em produção, o
-    header FRENET_WEBHOOK_TOKEN_NAME com esse valor é obrigatório (avisar a Frenet do par).
+    FRENET_WEBHOOK_TOKEN_VALUE configurado só aceitamos em DEBUG (dev).
+
+    Em produção o segredo é aceito de duas formas (qualquer uma basta):
+    - query string `?token=<valor>` — é o caminho principal: a Frenet não envia header
+      customizado, mas chama exatamente a URL que mandamos em cada pedido
+      (StatusNotificationUrl / TrackingNotificationUrl);
+    - header FRENET_WEBHOOK_TOKEN_NAME, caso a Frenet passe a enviar.
     """
     expected = getattr(settings, "FRENET_WEBHOOK_TOKEN_VALUE", "")
     if not expected:
         if not settings.DEBUG:
             logger.error("FRENET_WEBHOOK_TOKEN_VALUE não configurado: webhook Frenet recusado.")
         return bool(settings.DEBUG)
+
+    if query_params is not None:
+        received = query_params.get(WEBHOOK_TOKEN_QUERY_PARAM, "")
+        if hmac.compare_digest(received.encode(), expected.encode()):
+            return True
+
     name = getattr(settings, "FRENET_WEBHOOK_TOKEN_NAME", "FRENET_INTEGRATION")
     # Django expõe o header com hífen ("Frenet-Integration") mesmo que o nome
     # configurado use underscore; sem normalizar, o header nunca casava.
-    return hmac.compare_digest(headers.get(name.replace("_", "-"), ""), expected)
+    received_header = headers.get(name.replace("_", "-"), "")
+    return hmac.compare_digest(received_header.encode(), expected.encode())
 
 
 def _find_order(order_code: str, shipment_id) -> Order | None:

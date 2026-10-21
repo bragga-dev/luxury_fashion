@@ -13,7 +13,7 @@ para impedir compra dupla de etiqueta.
 """
 import logging
 from decimal import Decimal
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
 from django.db import transaction
@@ -24,6 +24,7 @@ from luxury_fashion.apps.core.exceptions.shipping import (
 )
 from luxury_fashion.apps.core.security.cpf_crypto import only_digits
 from luxury_fashion.apps.payments.models.order_model import Order
+from luxury_fashion.apps.payments.services.frenet_webhook_service import WEBHOOK_TOKEN_QUERY_PARAM
 from luxury_fashion.apps.products.integrations.frenet_client import FrenetClient
 
 logger = logging.getLogger(__name__)
@@ -179,8 +180,11 @@ def _build_shipment_payload(order: Order) -> dict:
 
     base = (settings.FRENET_WEBHOOK_BASE_URL or "").rstrip("/")
     if base:
-        shipment["StatusNotificationUrl"] = f"{base}{STATUS_WEBHOOK_PATH}"
-        shipment["TrackingNotificationUrl"] = f"{base}{TRACKING_WEBHOOK_PATH}"
+        # A Frenet não envia header de autenticação: o segredo vai na própria URL.
+        secret = getattr(settings, "FRENET_WEBHOOK_TOKEN_VALUE", "")
+        query = f"?{urlencode({WEBHOOK_TOKEN_QUERY_PARAM: secret})}" if secret else ""
+        shipment["StatusNotificationUrl"] = f"{base}{STATUS_WEBHOOK_PATH}{query}"
+        shipment["TrackingNotificationUrl"] = f"{base}{TRACKING_WEBHOOK_PATH}{query}"
 
     return shipment
 
