@@ -1,70 +1,63 @@
 {% extends "core/emails/base.html" %}
 
-{% block title %}Confirme seu E-mail — Gama Fashion{% endblock %}
+{% block title %}Confirme seu E-mail — {{ store_name }}{% endblock %}
 
-{% block preheader %}Confirme seu e-mail para ativar sua conta na Gama Fashion.{% endblock %}
+{% block preheader %}Confirme seu e-mail para ativar sua conta na {{ store_name }}.{% endblock %}
 
 {% block content %}
 
     <span class="section-label">Verificação de conta</span>
     <h1 class="heading">Confirme seu e-mail</h1>
-    <div class="rule"></div>
 
     <p class="greeting">
         Olá, <strong>{{ user_email }}</strong>!
     </p>
 
     <p class="body-text">
-        Você está a um passo de entrar na Gama Fashion.
+        Você está a um passo de aproveitar as novidades da {{ store_name }}.
         Clique no botão abaixo para confirmar seu endereço de e-mail
         e ativar sua conta.
     </p>
 
-<!-- Info box -->
-    <div class="info-box">
+    <!-- Info box -->
+    <div class="info-box plain">
         <p class="info-box-title">Por que confirmar?</p>
         <p class="info-box-text">
             A confirmação garante a segurança da sua conta e permite
-            que você acompanhe seus pedidos e receba lançamentos e
-            novidades da loja em primeira mão, direto no seu e-mail.
+            que você acompanhe seus pedidos e receba novidades da
+            loja em primeira mão, direto no seu e-mail.
         </p>
     </div>
 
-<!-- CTA -->
+    <!-- CTA -->
     <div class="cta-wrap">
-<!--[if mso]>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ verify_url }}" style="height:52px;v-text-anchor:middle;width:240px;" arcsize="4%" stroke="t" strokecolor="#721432" strokeweight="1pt" fillcolor="#8e1b3f">
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ verify_url }}" style="height:50px;v-text-anchor:middle;width:220px;" arcsize="15%" stroke="f" fillcolor="#8e1b3f">
             <w:anchorlock/>
-            <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:3px;">CONFIRMAR E-MAIL</center>
+            <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">CONFIRMAR E-MAIL</center>
         </v:roundrect>
         <![endif]-->
-<!--[if !mso]><!-->
+        <!--[if !mso]><!-->
         <a href="{{ verify_url }}" class="cta-btn">
             Confirmar e-mail
         </a>
-<!--<![endif]-->
+        <!--<![endif]-->
     </div>
 
-<!-- Fallback link -->
+    <!-- Fallback link -->
     <div class="link-fallback">
         <p>Caso o botão não funcione, copie o link abaixo:</p>
         <a href="{{ verify_url }}">{{ verify_url }}</a>
     </div>
 
-<!-- Warning -->
+    <!-- Warning -->
     <div class="warning-box">
         <p>
             <strong>Atenção:</strong>
             Este link é de uso único e expira em <strong>24 horas</strong>.
-            Se você não criou uma conta na Gama Fashion, ignore este
+            Se você não criou uma conta na {{ store_name }}, ignore este
             e-mail com segurança.
         </p>
-    </div>
-
-<!-- Closing -->
-    <div class="closing-note">
-        <p class="script">Treine com estilo.</p>
-        <p class="team">Equipe Gama Fashion</p>
     </div>
 
 {% endblock %}

@@ -3,6 +3,7 @@ Tasks Celery — verificação de email.
 """
 import logging
 from celery import shared_task
+from django.conf import settings
 from luxury_fashion.apps.accounts.models.user_model import User
 from luxury_fashion.apps.core.emails.sender import send_html_email
 
@@ -39,7 +40,7 @@ def send_verification_email(self, user_id: str) -> None:
         }
 
         send_html_email(
-            subject="Confirme seu e-mail — ÉLUXO MODAS",
+            subject=f"Confirme seu e-mail — {settings.STORE_NAME}",
             to_email=user.email,
             template_name="accounts/emails/verification_email.html",
             context=context,

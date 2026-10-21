@@ -110,8 +110,8 @@ def test_gera_etiqueta_e_persiste(paid_order, client_profile, mock_http):
     assert s["Quotation"]["ShippingServiceCode"] == "04510"
     # 2 un x 0.3kg
     assert s["Volumes"]["Weight"] == 0.6
-    assert s["StatusNotificationUrl"].startswith("https://api.loja.test")
-    assert s["TrackingNotificationUrl"].startswith("https://api.loja.test")
+    assert s["StatusNotificationUrl"] == "https://api.loja.test/api/shipping/webhooks/frenet/status?token=segredo-webhook"
+    assert s["TrackingNotificationUrl"] == "https://api.loja.test/api/shipping/webhooks/frenet/tracking?token=segredo-webhook"
 
 
 @pytest.mark.django_db
@@ -225,6 +225,45 @@ def test_webhook_token_obrigatorio_quando_configurado(client, shipped_order, set
     assert ok.status_code == 200
     shipped_order.refresh_from_db()
     assert shipped_order.shipping_tracking_code == "AB123BR"
+
+
+@pytest.mark.django_db
+def test_webhook_aceita_token_na_query_string(client, shipped_order, settings):
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = "segredo"
+    body = {"OrderId": shipped_order.code, "ShipmentId": 12682, "TrackingNumber": "QS123BR"}
+    ok = client.post("/api/shipping/webhooks/frenet/tracking?token=segredo", data=body,
+                     content_type="application/json")
+    assert ok.status_code == 200
+    shipped_order.refresh_from_db()
+    assert shipped_order.shipping_tracking_code == "QS123BR"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("path", ["status", "tracking"])
+def test_webhook_token_errado_na_query_string_e_recusado(client, shipped_order, settings, path):
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = "segredo"
+    body = {"OrderId": shipped_order.code, "ShipmentId": 12682, "ShipmentStatus": 5, "TrackingNumber": "X1"}
+    for qs in ("?token=errado", "?token=", "?outro=segredo", ""):
+        resp = client.post(f"/api/shipping/webhooks/frenet/{path}{qs}", data=body,
+                           content_type="application/json")
+        assert resp.status_code == 401
+
+
+@pytest.mark.django_db
+def test_url_de_notificacao_sem_segredo_nao_leva_query(paid_order, client_profile, mock_http, settings):
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = ""
+    generate_label_for_order(paid_order.order_id)
+    s = mock_http.call_args.kwargs["json"][0]
+    assert s["StatusNotificationUrl"] == "https://api.loja.test/api/shipping/webhooks/frenet/status"
+    assert "?" not in s["TrackingNotificationUrl"]
+
+
+@pytest.mark.django_db
+def test_url_de_notificacao_escapa_o_segredo(paid_order, client_profile, mock_http, settings):
+    settings.FRENET_WEBHOOK_TOKEN_VALUE = "a&b=c d"
+    generate_label_for_order(paid_order.order_id)
+    s = mock_http.call_args.kwargs["json"][0]
+    assert s["StatusNotificationUrl"].endswith("?token=a%26b%3Dc+d")
 
 
 @pytest.mark.django_db

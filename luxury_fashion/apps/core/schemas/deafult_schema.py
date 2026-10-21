@@ -4,7 +4,6 @@ from ninja import Schema
 T = TypeVar("T")
 
 class PageOut(Schema, Generic[T]):
-    """Schema de resposta paginada."""
     items: List[T]
     total: int     
     page: int      
@@ -13,5 +12,15 @@ class PageOut(Schema, Generic[T]):
 
 
 class MessageOut(Schema):
-    """Schema genérico para respostas simples de mensagem (erros e confirmações)."""
     detail: str
+
+
+class FieldErrorOut(Schema):
+    field: str     
+    message: str
+    type: str      
+
+
+class ValidationErrorOut(Schema):
+    detail: str
+    errors: List[FieldErrorOut]

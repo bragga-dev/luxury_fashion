@@ -5,6 +5,7 @@ Tasks Celery — envio de e-mails de pagamento (solicitação de pagamento ao cl
 import logging
 import uuid
 from celery import shared_task
+from django.conf import settings
 
 from luxury_fashion.apps.accounts.selectors.client_selector import get_client_by_user_id
 from luxury_fashion.apps.accounts.selectors.user_selector import get_user_by_id
@@ -64,7 +65,7 @@ def send_payment_request(self, user_id: uuid.UUID, payment_id: uuid.UUID) -> Non
         }
 
         send_html_email(
-            subject="Pagamento — ÉLUXO MODAS",
+            subject=f"Pagamento — {settings.STORE_NAME}",
             to_email=user.email,
             template_name="payment/emails/send_payment_request.html",
             context=context,

@@ -4,7 +4,7 @@ Frenet endpoints — cotação de frete por variante.
 import uuid
 
 from django_ratelimit.decorators import ratelimit
-from ninja import Router
+from ninja import Router, Status
 from pydantic import ValidationError as PydanticValidationError
 
 from luxury_fashion.apps.core.exceptions import (
@@ -40,12 +40,12 @@ router = Router()
 def quote_shipping_router(request, variant_id: uuid.UUID, payload: ShippingQuoteIn):
     try:
         options = quote_shipping_for_variant(variant_id, payload)
-        return 200, options
+        return Status(200, options)
     except VariantNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ShippingNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except FrenetAPIError as e:
-        return 502, {"detail": str(e)}
+        return Status(502, {"detail": str(e)})
     except PydanticValidationError as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})

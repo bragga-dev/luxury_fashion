@@ -19,6 +19,15 @@ class StatusOrderEnum(str, Enum):
     FAILED = "FAILED"
 
 
+class ShippingStatusEnum(str, Enum):
+    """Espelha Order.ShippingStatus."""
+    PENDING = "pending"
+    LABEL_GENERATED = "label_generated"
+    SHIPPED = "shipped"
+    IN_TRANSIT = "in_transit"
+    DELIVERED = "delivered"
+
+
 class OrderCreateIn(Schema):
     """
     Checkout do carrinho do cliente autenticado. `user_id` e `cart_id`
@@ -49,6 +58,12 @@ class OrderOut(Schema):
     shipping_service_code: Optional[str] = None
     shipping_service_name: Optional[str] = None
     shipping_delivery_days: Optional[int] = None
+    shipping_status: ShippingStatusEnum
+    shipping_status_label: str
+    shipping_tracking_code: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    shipped_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -68,6 +83,20 @@ class OrderOut(Schema):
             shipping_service_code=order.shipping_service_code,
             shipping_service_name=order.shipping_service_name,
             shipping_delivery_days=order.shipping_delivery_days,
+            shipping_status=order.shipping_status,
+            shipping_status_label=order.get_shipping_status_display(),
+            shipping_tracking_code=order.shipping_tracking_code,
+            completed_at=order.completed_at,
+            shipped_at=order.shipped_at,
+            delivered_at=order.delivered_at,
             created_at=order.created_at,
             updated_at=order.updated_at,
         )
+
+
+class LabelOut(Schema):
+    """Resultado da geração de etiqueta (admin)."""
+    success: bool
+    frenet_shipment_id: Optional[str] = None
+    tracking_code: Optional[str] = None
+    label_url: Optional[str] = None

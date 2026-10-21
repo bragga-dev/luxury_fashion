@@ -4,6 +4,7 @@ from ninja_jwt.exceptions import AuthenticationFailed as JWTAuthenticationFailed
 from ninja.errors import ValidationError, AuthenticationError
 from django.http import HttpRequest, JsonResponse
 from luxury_fashion.apps.core.exceptions import PermissionDenied
+from luxury_fashion.apps.core.utils.validation_errors import format_validation_errors
 from luxury_fashion.apps.accounts.api.auth import router as auth_router
 from luxury_fashion.apps.accounts.api.admin import router as admin_router
 from luxury_fashion.apps.accounts.api.address import router as address_router
@@ -18,6 +19,8 @@ from luxury_fashion.apps.payments.api.payments import router as payments_router
 from luxury_fashion.apps.payments.api.webhook import router as asaas_webhook_router
 from luxury_fashion.apps.payments.api.frenet_webhook import router as frenet_webhook_router
 from luxury_fashion.apps.reviews.api.reviews import router as reviews_router
+from luxury_fashion.apps.notifications.api.notifications import router as notifications_router
+from luxury_fashion.apps.chat.api.chat import router as chat_router
 from luxury_fashion.apps.website.api.campaign import router as campaign_router
 from luxury_fashion.apps.website.api.contact import router as contact_router
 from django_ratelimit.exceptions import Ratelimited
@@ -35,7 +38,7 @@ from luxury_fashion.apps.core.permissions.auth_classes import (
 logger = logging.getLogger("django")
 
 api = NinjaAPI(
-    title="Gama Fashion - Moda Fitness",
+    title="Fit Store Carla Gama",
     version="1.0.0",
     description="E-commerce de moda Fitness masculina e feminina.",
     auth=[JWTAuth(), AdminOnlyAuth(), ClientOnlyAuth(), VerifiedUserAuth(), ActiveUserAuth()],
@@ -60,6 +63,8 @@ api.add_router("/payments", asaas_webhook_router, tags=["Webhooks"])
 api.add_router("/", payments_router, tags=["Payments"])
 api.add_router("/address/", address_router, tags=["Address"])
 api.add_router("/reviews/", reviews_router, tags=["Reviews"])
+api.add_router("/notifications/", notifications_router, tags=["Notifications"])
+api.add_router("/chat", chat_router, tags=["Chat"])
 api.add_router("/campaigns/", campaign_router, tags=["Campaigns"])
 api.add_router("/contact/", contact_router, tags=["Contact"])
 api.add_router("/products/", variant_router, tags=["Variantes"])
@@ -72,7 +77,7 @@ api.add_router("/products/", product_image_router, tags=["Imagens de Produto"])
 def validation_error(request: HttpRequest, exc: ValidationError):
     return api.create_response(
         request,
-        {"detail": exc.errors},
+        {"detail": "Dados inválidos.", "errors": format_validation_errors(exc.errors)},
         status=422,
     )
 

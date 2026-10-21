@@ -40,3 +40,8 @@ RATELIMIT_ENABLE = False
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
+
+# Channels: layer em memória nos testes (sem depender de Redis).
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+}

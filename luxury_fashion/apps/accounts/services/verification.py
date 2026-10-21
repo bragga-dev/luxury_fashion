@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import transaction
 from luxury_fashion.apps.core.tokens.signing import generate_uid_token
 
 
@@ -37,4 +38,10 @@ def verify_email(uidb64: str, token: str) -> User:
 
     if not default_token_generator.check_token(user, token):
         raise InvalidToken("Token inválido ou expirado.")
-    return activate_user(user)
+
+    was_active = user.is_active and user.is_trusty
+    user = activate_user(user)
+    if not was_active:  # clicar de novo no link não reenvia as boas-vindas
+        from luxury_fashion.apps.accounts.tasks.account_notifications import send_welcome_email
+        transaction.on_commit(lambda: send_welcome_email.delay(str(user.pk)), robust=True)
+    return user

@@ -7,6 +7,8 @@ schemas prontos para a camada de API.
 import uuid
 from typing import Optional
 
+from django.db import transaction
+
 from luxury_fashion.apps.core.exceptions.contact_exception import (
     ContactNameAlreadyExists,
     ContactNotFound,
@@ -25,6 +27,10 @@ from luxury_fashion.apps.website.schemas.contact_schema import (
     ContactOut,
 )
 
+from luxury_fashion.apps.website.tasks.contact_notifications import (
+    send_contact_admin_alert,
+    send_contact_received_email,
+)
 from luxury_fashion.apps.website.selectors.contact_selector import (
     contact_name_exists,
     get_all_contacts,
@@ -64,6 +70,10 @@ def create_contact_message(
         phone=data.phone,
         status=Contact.ContactStatus.PENDING,
     )
+
+    # Confirmação ao cliente + aviso à loja, só depois do commit.
+    transaction.on_commit(lambda: send_contact_received_email.delay(str(contact.contact_id)), robust=True)
+    transaction.on_commit(lambda: send_contact_admin_alert.delay(str(contact.contact_id)), robust=True)
 
     return ContactOut.from_orm(contact)
 

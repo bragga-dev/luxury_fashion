@@ -6,11 +6,12 @@ persistem o que o service já decidiu.
 import hmac
 import logging
 import uuid
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ from luxury_fashion.apps.core.exceptions import (
 from luxury_fashion.apps.payments.integrations.asaas_client import AsaasClient
 from luxury_fashion.apps.payments.models.order_model import Order
 from luxury_fashion.apps.payments.models.payment_model import Payment
+from luxury_fashion.apps.notifications.services.notification_service import notify_order_refunded
+from luxury_fashion.apps.payments.tasks.order_notifications import queue_email, send_payment_refunded_email
 from luxury_fashion.apps.payments.repositories.asaas_customer_repository import create_asaas_customer
 from luxury_fashion.apps.payments.repositories.order_repository import (
     refunded_order,
@@ -44,7 +47,7 @@ from luxury_fashion.apps.payments.selectors.payment_selector import (
 )
 
 from luxury_fashion.apps.payments.repositories.payment_repository import create_payment, update_payment
-from luxury_fashion.apps.payments.services.order_service import confirm_order_payment
+from luxury_fashion.apps.payments.services.order_service import confirm_order_payment, refund_order
 from luxury_fashion.apps.payments.services.asaas_payment_mapper import (
     map_payment_creation_response,
     map_pix_qrcode_response,
@@ -101,7 +104,7 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
         if get_open_payment_for_order(order.order_id) is not None:
             raise OrderAlreadyPaid()
 
-        due_date = date.today() + timedelta(days=settings.ASAAS_PAYMENT_DUE_DAYS)
+        due_date = timezone.localdate() + timedelta(days=settings.ASAAS_PAYMENT_DUE_DAYS)
 
         payment = create_payment(
             order_id=order,
@@ -114,19 +117,22 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
 
     # A partir daqui o lock já foi liberado — o resto é I/O de rede com a
     # Asaas e não deve segurar a linha do Order.
-    cpf_cnpj = data.credit_card_holder_info.cpf_cnpj if data.credit_card_holder_info else None
-    customer_id = _get_or_create_asaas_customer(user_id, cpf_cnpj=cpf_cnpj)
-
+    #
+    # QUALQUER falha daqui até a criação da cobrança (CPF ausente, erro ao criar o
+    # customer, erro ao criar a cobrança) precisa cancelar o Payment local reservado
+    # acima — senão ele fica PENDING sem asaas_payment_id e get_open_payment_for_order
+    # passa a barrar qualquer nova tentativa (OrderAlreadyPaid) num pedido que nunca
+    # chegou a ter cobrança de verdade.
     asaas = AsaasClient()
-    credit_card = data.credit_card.model_dump(by_alias=False) if data.credit_card else None
-    credit_card_holder_info = (data.credit_card_holder_info.model_dump(by_alias=False) if data.credit_card_holder_info else None)
-
-    # Se a chamada de criação falhar na Asaas, o Payment local (PENDING,
-    # sem asaas_payment_id) precisa ser cancelado aqui — senão ele fica
-    # "preso" e get_open_payment_for_order passa a barrar QUALQUER nova
-    # tentativa de pagamento pra esse pedido pra sempre (OrderAlreadyPaid
-    # num pedido que, na prática, nunca chegou a ter cobrança nenhuma).
     try:
+        cpf_cnpj = data.credit_card_holder_info.cpf_cnpj if data.credit_card_holder_info else None
+        customer_id = _get_or_create_asaas_customer(user_id, cpf_cnpj=cpf_cnpj)
+
+        credit_card = data.credit_card.model_dump(by_alias=False) if data.credit_card else None
+        credit_card_holder_info = (
+            data.credit_card_holder_info.model_dump(by_alias=False) if data.credit_card_holder_info else None
+        )
+
         response = asaas.create_payment(
             customer_id=customer_id,
             billing_type=data.billing_type.value,
@@ -137,7 +143,7 @@ def create_payment_for_order(user_id: uuid.UUID, order_id: uuid.UUID, data: Paym
             credit_card=credit_card,
             credit_card_holder_info=credit_card_holder_info,
         )
-    except AsaasAPIError:
+    except Exception:
         update_payment(payment, status=Payment.PaymentStatus.CANCELLED)
         raise
 
@@ -182,10 +188,13 @@ def list_payments_for_order(user_id: uuid.UUID, order_id: uuid.UUID) -> list[Pay
 def _do_refund(payment: Payment, value: Decimal | None, description: str | None) -> PaymentOut:
     if payment.status not in _REFUNDABLE_STATUSES or payment.billing_type not in _REFUNDABLE_BILLING_TYPES:
         raise PaymentNotRefundable()
+    if value is not None and value > payment.value:
+        raise PaymentNotRefundable("O valor do estorno não pode ser maior que o valor da cobrança.")
 
     asaas = AsaasClient()
     response = asaas.refund_payment(payment.asaas_payment_id, value=value, description=description)
     payment = update_payment(payment, **map_refund_response(response))
+    queue_email(send_payment_refunded_email, payment.payment_id, "requested", str(value) if value is not None else None)
     return PaymentOut.from_orm(payment)
 
 
@@ -227,6 +236,7 @@ def _auto_refund_orphan_payment(payment: Payment, order: Order) -> None:
             description=f"Estorno automático: pedido {order.code} já estava {order.order_status}.",
         )
         update_payment(payment, **map_refund_response(response))
+        queue_email(send_payment_refunded_email, payment.payment_id, "late_payment")
     except AsaasAPIError:
         logger.exception("Falha ao estornar pagamento órfão %s — tratar manualmente.", payment.asaas_payment_id)
 
@@ -257,4 +267,9 @@ def handle_asaas_webhook(token: str, event: str, payment_data: dict) -> None:
             order.refresh_from_db()
             _auto_refund_orphan_payment(payment, order)
     elif status in _REFUND_STATUSES and order.order_status != Order.StatusOrder.REFUNDED:
-        refunded_order(order=order)
+        if refund_order(order.order_id):
+            notify_order_refunded(order.order_id)
+        else:
+            # Estorno de pagamento que nunca concluiu o pedido (ex.: pago depois de cancelado/expirado, ou
+            # sem estoque): o pedido continua CANCELLED — não há transição nem "pedido reembolsado" a avisar.
+            logger.info("Estorno %s recebido; pedido %s segue %s (sem transição).", asaas_payment_id, order.code, order.order_status)

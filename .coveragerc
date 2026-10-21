@@ -1,0 +1,12 @@
+[run]
+source = luxury_fashion/apps
+omit =
+    */migrations/*
+    */tests/*
+    */tests.py
+    */__init__.py
+    */apps.py
+
+[report]
+show_missing = True
+skip_covered = True

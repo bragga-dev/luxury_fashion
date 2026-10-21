@@ -59,3 +59,21 @@ class ShippingAlreadyExists(Exception):
     def __init__(self, message=None):
         self.message = message or _("Esta variante já possui dados de frete cadastrados.")
         super().__init__(self.message)
+
+
+class ProductInUse(Exception):
+    def __init__(self, message=None):
+        self.message = message or _(
+            "Este produto já foi vendido e faz parte do histórico de pedidos — não pode ser excluído. "
+            "Desative-o para tirá-lo da vitrine."
+        )
+        super().__init__(self.message)
+
+
+class VariantInUse(Exception):
+    def __init__(self, message=None):
+        self.message = message or _(
+            "Esta variante já foi vendida e faz parte do histórico de pedidos — não pode ser excluída. "
+            "Desative-a para tirá-la da vitrine."
+        )
+        super().__init__(self.message)

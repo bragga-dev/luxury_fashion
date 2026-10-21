@@ -18,11 +18,11 @@ def get_address_by_id(address_id: uuid.UUID) -> Optional[AddressesClient]:
 
 def get_address_by_client(client_id: uuid.UUID) -> Optional[AddressesClient]:
     """Busca endereço por cliente)."""
-    return AddressesClient.objects.filter(client_id=client_id).all()
+    return AddressesClient.objects.filter(client_id=client_id, is_archived=False).all()
 
 def get_address_is_preferential(client_id, is_preferential: bool = True) -> Optional['AddressesClient']:
     """Retorna um endereço preferencial de um cliente específico"""
-    return AddressesClient.objects.filter(client_id=client_id, is_preferential=is_preferential).select_related('client_id').first()
+    return AddressesClient.objects.filter(client_id=client_id, is_preferential=is_preferential, is_archived=False).select_related('client_id').first()
 
 # ── Verificações de existência ────────────────────────────────────────────────
 
@@ -68,4 +68,9 @@ def get_addresses_by_cep_partial(cep_prefix: str) -> QuerySet[AddressesClient]:
 
 def count_addresses_by_client(client_id: uuid.UUID) -> int:
     """Conta quantos endereços um cliente possui."""
-    return AddressesClient.objects.filter(client_id=client_id).count()
+    return AddressesClient.objects.filter(client_id=client_id, is_archived=False).count()
+
+
+def address_has_orders(address: AddressesClient) -> bool:
+    """O endereço já foi usado como destino de algum pedido? (então é histórico: não muda nem some)"""
+    return address.orders.exists()

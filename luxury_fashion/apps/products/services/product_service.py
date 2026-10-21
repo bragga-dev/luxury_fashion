@@ -4,12 +4,16 @@ Product Services — orquestra regras de negócio de produtos
 para a camada de API.
 """
 import uuid
+
+from django.db.models import ProtectedError
+from decimal import Decimal
 from typing import Optional
 
 from django.db import transaction
 
 from luxury_fashion.apps.core.exceptions.products_exception import (
     CategoryNotFound,
+    ProductInUse,
     ProductNameAlreadyExists,
     ProductNotFound,
 )
@@ -86,6 +90,8 @@ def search_products_queryset(
     in_stock_only: bool = False,
     active_only: bool = True,
     sort: Optional[str] = None,
+    min_price: Optional[Decimal] = None,
+    max_price: Optional[Decimal] = None,
 ):
     """
     Mesma filtragem de `search_products_for_all`, mas devolve o QuerySet
@@ -100,6 +106,8 @@ def search_products_queryset(
         in_stock_only=in_stock_only,
         active_only=active_only,
         sort=sort,
+        min_price=min_price,
+        max_price=max_price,
     )
 
 
@@ -185,7 +193,11 @@ def update_product_for_admin(product_id: uuid.UUID, data: ProductUpdateIn) -> Pr
 
 def delete_product_for_admin(product_id: uuid.UUID) -> None:
     product = _get_product_or_raise(product_id=product_id)
-    delete_product(product=product)
+    try:
+        delete_product(product=product)
+    except ProtectedError:
+        # Variantes vendidas (OrderItem.variant_id é PROTECT): histórico fiscal não pode sumir.
+        raise ProductInUse()
 
 
 def activate_product_for_admin(product_id: uuid.UUID) -> ProductOut:

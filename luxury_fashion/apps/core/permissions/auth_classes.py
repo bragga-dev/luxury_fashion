@@ -31,7 +31,7 @@ class ClientCompleteProfileAuth(JWTAuth):
             "Nome": client.first_name,
             "Sobrenome": client.last_name,
             "CPF": client.cpf,
-            "Endereço": client.addresses.exists(),
+            "Endereço": client.addresses.filter(is_archived=False).exists(),
         }
 
         missing = [field for field, value in required_fields.items() if not value]

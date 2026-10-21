@@ -60,7 +60,7 @@ class TestCreateOrderFromCart:
 
         cart.refresh_from_db()
         assert cart.items.count() == 0
-        assert cart.total_geral == Decimal("0.00")
+        assert cart.total_price == Decimal("0.00")
 
     def test_raises_user_not_found_when_user_does_not_exist(self, address):
         payload = OrderCreateIn(shipping_address_id=address.address_id, shipping_service_code="04510")

@@ -6,7 +6,7 @@ import uuid
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import File, Router, UploadedFile
+from ninja import File, Router, Status, UploadedFile
 
 from luxury_fashion.apps.core.exceptions import (
     CampaignImageNotFound,
@@ -62,7 +62,7 @@ router = Router()
 @ratelimit(key="ip", rate="60/m", block=True)
 def list_campaigns_router(request, page: int = 1, page_size: int = PAGE_SIZE_DEFAULT, active_only: bool = True):
     qs = list_campaigns_queryset(active_only=active_only)
-    return 200, paginate_queryset(qs, page, page_size, CampaignOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, CampaignOut.from_orm))
 
 
 @router.get(
@@ -74,7 +74,7 @@ def list_campaigns_router(request, page: int = 1, page_size: int = PAGE_SIZE_DEF
 )
 @ratelimit(key="ip", rate="60/m", block=True)
 def list_running_campaigns_router(request):
-    return 200, list_running_campaigns_for_all()
+    return Status(200, list_running_campaigns_for_all())
 
 
 @router.get(
@@ -86,9 +86,9 @@ def list_running_campaigns_router(request):
 @ratelimit(key="ip", rate="60/m", block=True)
 def detail_campaign_router(request, campaign_id: uuid.UUID):
     try:
-        return 200, get_campaign_for_all(campaign_id)
+        return Status(200, get_campaign_for_all(campaign_id))
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.get(
@@ -99,7 +99,7 @@ def detail_campaign_router(request, campaign_id: uuid.UUID):
 )
 @ratelimit(key="ip", rate="60/m", block=True)
 def list_campaign_images_router(request, campaign_id: uuid.UUID):
-    return 200, list_campaign_images_for_all(campaign_id)
+    return Status(200, list_campaign_images_for_all(campaign_id))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -115,11 +115,11 @@ def list_campaign_images_router(request, campaign_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def create_campaign_router(request, payload: CampaignCreateIn):
     try:
-        return 201, create_campaign_for_admin(payload)
+        return Status(201, create_campaign_for_admin(payload))
     except CampaignTitleAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.patch(
@@ -131,13 +131,13 @@ def create_campaign_router(request, payload: CampaignCreateIn):
 @ratelimit(key="user", rate="30/h", block=True)
 def update_campaign_router(request, campaign_id: uuid.UUID, payload: CampaignUpdateIn):
     try:
-        return 200, update_campaign_for_admin(campaign_id, payload)
+        return Status(200, update_campaign_for_admin(campaign_id, payload))
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except CampaignTitleAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 @router.delete(
@@ -150,9 +150,9 @@ def update_campaign_router(request, campaign_id: uuid.UUID, payload: CampaignUpd
 def delete_campaign_router(request, campaign_id: uuid.UUID):
     try:
         delete_campaign_for_admin(campaign_id)
-        return 200, {"detail": "Campanha excluída com sucesso."}
+        return Status(200, {"detail": "Campanha excluída com sucesso."})
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -164,9 +164,9 @@ def delete_campaign_router(request, campaign_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def activate_campaign_router(request, campaign_id: uuid.UUID):
     try:
-        return 200, activate_campaign_for_admin(campaign_id)
+        return Status(200, activate_campaign_for_admin(campaign_id))
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -178,9 +178,9 @@ def activate_campaign_router(request, campaign_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def deactivate_campaign_router(request, campaign_id: uuid.UUID):
     try:
-        return 200, deactivate_campaign_for_admin(campaign_id)
+        return Status(200, deactivate_campaign_for_admin(campaign_id))
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -202,11 +202,11 @@ def upload_campaign_image_router(
     display_order: int = 0,
 ):
     try:
-        return 201, upload_campaign_image_for_admin(campaign_id, image, is_cover, display_order)
+        return Status(201, upload_campaign_image_for_admin(campaign_id, image, is_cover, display_order))
     except CampaignNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except InvalidImageFile as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
 
 @router.patch(
@@ -218,9 +218,9 @@ def upload_campaign_image_router(
 @ratelimit(key="user", rate="30/h", block=True)
 def update_campaign_image_router(request, campaign_mage_id: uuid.UUID, payload: CampaignImageUpdateIn):
     try:
-        return 200, update_campaign_image_for_admin(campaign_mage_id, payload)
+        return Status(200, update_campaign_image_for_admin(campaign_mage_id, payload))
     except CampaignImageNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.delete(
@@ -233,9 +233,9 @@ def update_campaign_image_router(request, campaign_mage_id: uuid.UUID, payload: 
 def delete_campaign_image_router(request, campaign_mage_id: uuid.UUID):
     try:
         delete_campaign_image_for_admin(campaign_mage_id)
-        return 200, {"detail": "Imagem excluída com sucesso."}
+        return Status(200, {"detail": "Imagem excluída com sucesso."})
     except CampaignImageNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -247,9 +247,9 @@ def delete_campaign_image_router(request, campaign_mage_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def set_cover_campaign_image_router(request, campaign_mage_id: uuid.UUID):
     try:
-        return 200, set_cover_campaign_image_for_admin(campaign_mage_id)
+        return Status(200, set_cover_campaign_image_for_admin(campaign_mage_id))
     except CampaignImageNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -261,6 +261,6 @@ def set_cover_campaign_image_router(request, campaign_mage_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def reorder_campaign_image_router(request, campaign_mage_id: uuid.UUID, display_order: int):
     try:
-        return 200, reorder_campaign_image_for_admin(campaign_mage_id, display_order)
+        return Status(200, reorder_campaign_image_for_admin(campaign_mage_id, display_order))
     except CampaignImageNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})

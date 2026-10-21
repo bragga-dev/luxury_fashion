@@ -12,6 +12,16 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from luxury_fashion.apps.payments.tasks.order_notifications import (
+    queue_email,
+    send_order_delivered_email,
+    send_order_shipped_email,
+)
+from luxury_fashion.apps.notifications.services.notification_service import (
+    notify_order_delivered,
+    notify_order_in_transit,
+    notify_order_shipped,
+)
 from luxury_fashion.apps.payments.models.order_model import Order
 
 logger = logging.getLogger(__name__)
@@ -20,21 +30,36 @@ SHIPMENT_POSTED = 5
 SHIPMENT_CANCELLED = 7
 
 
-def is_valid_webhook_token(headers) -> bool:
+WEBHOOK_TOKEN_QUERY_PARAM = "token"
+
+
+def is_valid_webhook_token(headers, query_params=None) -> bool:
     """
     Os webhooks mexem no status de envio dos pedidos, então NÃO ficam abertos: sem
-    FRENET_WEBHOOK_TOKEN_VALUE configurado só aceitamos em DEBUG (dev). Em produção, o
-    header FRENET_WEBHOOK_TOKEN_NAME com esse valor é obrigatório (avisar a Frenet do par).
+    FRENET_WEBHOOK_TOKEN_VALUE configurado só aceitamos em DEBUG (dev).
+
+    Em produção o segredo é aceito de duas formas (qualquer uma basta):
+    - query string `?token=<valor>` — é o caminho principal: a Frenet não envia header
+      customizado, mas chama exatamente a URL que mandamos em cada pedido
+      (StatusNotificationUrl / TrackingNotificationUrl);
+    - header FRENET_WEBHOOK_TOKEN_NAME, caso a Frenet passe a enviar.
     """
     expected = getattr(settings, "FRENET_WEBHOOK_TOKEN_VALUE", "")
     if not expected:
         if not settings.DEBUG:
             logger.error("FRENET_WEBHOOK_TOKEN_VALUE não configurado: webhook Frenet recusado.")
         return bool(settings.DEBUG)
+
+    if query_params is not None:
+        received = query_params.get(WEBHOOK_TOKEN_QUERY_PARAM, "")
+        if hmac.compare_digest(received.encode(), expected.encode()):
+            return True
+
     name = getattr(settings, "FRENET_WEBHOOK_TOKEN_NAME", "FRENET_INTEGRATION")
     # Django expõe o header com hífen ("Frenet-Integration") mesmo que o nome
     # configurado use underscore; sem normalizar, o header nunca casava.
-    return hmac.compare_digest(headers.get(name.replace("_", "-"), ""), expected)
+    received_header = headers.get(name.replace("_", "-"), "")
+    return hmac.compare_digest(received_header.encode(), expected.encode())
 
 
 def _find_order(order_code: str, shipment_id) -> Order | None:
@@ -57,10 +82,30 @@ def handle_status_update(order_code: str, shipment_id: int, shipment_status: int
     if order is None:
         return
 
+    # Código de "entregue" da Frenet: configurável (FRENET_SHIPMENT_DELIVERED_STATUS) porque o
+    # valor deve ser confirmado na doc/painel da Frenet. Sem ele, a entrega é marcada pelo admin.
+    delivered_code = getattr(settings, "FRENET_SHIPMENT_DELIVERED_STATUS", None)
+
     if shipment_status == SHIPMENT_POSTED:
+        if order.shipping_status in (Order.ShippingStatus.IN_TRANSIT, Order.ShippingStatus.DELIVERED):
+            # Evento atrasado/duplicado: não regride um pedido que já avançou.
+            logger.info("Webhook Frenet: POSTED ignorado, pedido %s já está %s.", order_code, order.shipping_status)
+            return
+        was_shipped = order.shipping_status == Order.ShippingStatus.SHIPPED
         order.shipping_status = Order.ShippingStatus.SHIPPED
         order.shipped_at = order.shipped_at or timezone.now()
         order.save(update_fields=["shipping_status", "shipped_at", "updated_at"])
+        if not was_shipped:
+            notify_order_shipped(order.order_id)
+            queue_email(send_order_shipped_email, order.order_id)
+    elif delivered_code is not None and shipment_status == int(delivered_code):
+        if (
+            order.order_status == Order.StatusOrder.COMPLETED
+            and order.shipping_status != Order.ShippingStatus.DELIVERED
+        ):
+            order.mark_delivered()
+            notify_order_delivered(order.order_id)
+            queue_email(send_order_delivered_email, order.order_id)
     elif shipment_status == SHIPMENT_CANCELLED:
         # Etiqueta cancelada na Frenet (reembolso é lá): libera o pedido para nova geração.
         order.shipping_status = Order.ShippingStatus.PENDING
@@ -83,6 +128,9 @@ def handle_tracking_update(order_code: str, shipment_id: int, tracking_number: s
         return
     order.shipping_tracking_code = tracking_number
     # Qualquer evento de tracking após a postagem indica que está a caminho.
-    if order.shipping_status == Order.ShippingStatus.SHIPPED:
+    moved_to_transit = order.shipping_status == Order.ShippingStatus.SHIPPED
+    if moved_to_transit:
         order.shipping_status = Order.ShippingStatus.IN_TRANSIT
     order.save(update_fields=["shipping_tracking_code", "shipping_status", "updated_at"])
+    if moved_to_transit:
+        notify_order_in_transit(order.order_id)

@@ -12,8 +12,6 @@ class CartItem(models.Model):
     variant_id = models.ForeignKey("products.ProductVariant", on_delete=models.CASCADE, related_name="cart_items")
     quantity_item = models.PositiveIntegerField(_("Quantidade"), default=1, validators=[MinValueValidator(1)])
     unit_price_item = models.DecimalField(_("Preço unitário"), max_digits=10, decimal_places=2, default=0)
-    shipping_type = models.CharField(_("Tipo de frete"), max_length=255, null=True, blank=True)
-    shipping_value = models.DecimalField(_("Preço unitário de frete"), max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(_("Criado em"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Atualizado em"), auto_now=True)
 

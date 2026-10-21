@@ -1,0 +1,35 @@
+{# Resumo do pedido: itens, frete, total e endereço. Contexto: order_code, order_items, order_subtotal, order_shipping_total, order_total, ... #}
+<div class="info-box plain">
+    <p class="info-box-title">Pedido {{ order_code }}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        {% for item in order_items %}
+        <tr>
+            <td class="info-box-text" style="padding:6px 0;">{{ item.name }} <span style="color:#7d6a76;">&times; {{ item.quantity }}</span></td>
+            <td class="info-box-text" align="right" style="padding:6px 0;white-space:nowrap;">R$ {{ item.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        <tr><td colspan="2" style="border-top:1px solid #e8d6dd;font-size:0;line-height:0;padding-top:6px;">&nbsp;</td></tr>
+        <tr>
+            <td class="info-box-text" style="padding:3px 0;">Subtotal</td>
+            <td class="info-box-text" align="right" style="padding:3px 0;">R$ {{ order_subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="info-box-text" style="padding:3px 0;">Frete{% if order_shipping_service %} &middot; {{ order_shipping_service }}{% endif %}</td>
+            <td class="info-box-text" align="right" style="padding:3px 0;">R$ {{ order_shipping_total|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="info-box-text" style="padding:10px 0 0;"><strong>Total</strong></td>
+            <td class="payment-value amount" align="right" style="padding:10px 0 0;">R$ {{ order_total|floatformat:2 }}</td>
+        </tr>
+    </table>
+</div>
+
+{% if order_address_lines %}
+<div class="info-box plain">
+    <p class="info-box-title">Entrega</p>
+    <p class="info-box-text">
+        {% for line in order_address_lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        {% if order_delivery_days %}<br><strong>Prazo estimado:</strong> {{ order_delivery_days }} {% if order_delivery_days == 1 %}dia &uacute;til{% else %}dias &uacute;teis{% endif %} ap&oacute;s o envio{% endif %}
+    </p>
+</div>
+{% endif %}

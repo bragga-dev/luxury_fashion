@@ -1,3 +1,4 @@
+# luxury_fashion/luxury_fashion/config/settings/prod.py
 from datetime import timedelta
 
 from .base import *
@@ -31,6 +32,9 @@ DATABASES["default"]["CONN_MAX_AGE"] = 60
 # =========================================================
 
 SECURE_SSL_REDIRECT = True
+# O healthcheck do container bate em http://127.0.0.1 (sem X-Forwarded-Proto): sem esta exceção
+# o redirect pra HTTPS faria o container ser marcado como "unhealthy".
+SECURE_REDIRECT_EXEMPT = [r"^health/"]
 
 # O base calcula COOKIE_SECURE a partir do DEBUG do .env; aqui o DEBUG é forçado a False
 # DEPOIS, então um .env de prod copiado do dev deixava o cookie do refresh sem Secure.
@@ -203,3 +207,11 @@ NINJA_JWT = {
     "ACCESS_TOKEN_LIFETIME":  timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
+
+
+# =========================================================
+# SENTRY (opcional — sem SENTRY_DSN no .env fica desligado)
+# =========================================================
+from luxury_fashion.config.sentry import init_sentry 
+
+init_sentry()

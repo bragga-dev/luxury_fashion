@@ -198,3 +198,10 @@ def test_export_traz_enderecos_pedidos_e_mensagens(client, user, client_profile,
     assert data["pedidos"][0]["codigo"] == order.code
     assert data["pedidos"][0]["itens"][0]["quantidade"] == 2
     assert data["mensagens_de_contato"][0]["assunto"] == "Dúvida"
+
+
+def test_exclusao_com_pedidos_apaga_as_notificacoes_do_usuario(client, user, client_profile, address, order):
+    from luxury_fashion.apps.notifications.models.notification_model import Notification
+    Notification.objects.create(recipient=user, type=Notification.NotificationType.ORDER_PAID, title="Pagamento confirmado")
+    assert _delete(client, user).status_code == 200
+    assert not Notification.objects.filter(recipient=user).exists()

@@ -1,0 +1,44 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Pedido {{ order_code }} entregue — {{ store_name }}{% endblock %}
+
+{% block preheader %}Seu pedido {{ order_code }} foi entregue. Esperamos que você goste!{% endblock %}
+
+{% block content %}
+
+    <span class="section-label gold">Entregue</span>
+    <h1 class="heading">Seu pedido chegou!</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        O pedido <strong>{{ order_code }}</strong> foi entregue. Esperamos que você ame cada peça
+        e que ela acompanhe seus treinos por muito tempo.
+    </p>
+
+    <div style="text-align: center; margin: 4px 0 24px;">
+        <span class="status-badge success">Entregue</span>
+    </div>
+
+    {% include "core/emails/_order_summary.html" %}
+
+    <div class="info-box plain">
+        <p class="info-box-title">Como foi sua compra?</p>
+        <p class="info-box-text">
+            Sua opinião ajuda outras clientes a escolher. Quando quiser, avalie os produtos
+            em “Meus pedidos”. E se algo não saiu como esperado, fale com a gente em
+            <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+        </p>
+    </div>
+
+    {% include "core/emails/_cta.html" with url=client_orders_url label="Avaliar minha compra" secondary_url=store_url secondary_label="Voltar à loja" %}
+
+    <div class="closing-note">
+        <p class="script">Boas compras e bons treinos!</p>
+        <p class="team">Equipe {{ store_name }}</p>
+    </div>
+
+{% endblock %}

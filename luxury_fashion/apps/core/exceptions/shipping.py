@@ -33,3 +33,11 @@ class OrderLabelNotAllowed(Exception):
     def __init__(self, message: str):
         self.message = message
         super().__init__(message)
+
+
+class OrderDeliveryNotAllowed(Exception):
+    """Pré-condição de negócio não atendida para marcar o pedido como entregue."""
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)

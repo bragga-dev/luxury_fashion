@@ -1,0 +1,38 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Bem-vinda(o) — {{ store_name }}{% endblock %}
+
+{% block preheader %}Sua conta está ativa. Veja o que preparamos para você.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label">Conta confirmada</span>
+    <h1 class="heading">Bem-vinda(o)!</h1>
+    <div class="rule"></div>
+
+    <p class="greeting">
+        Olá, <strong>{{ client_name }}</strong>!
+    </p>
+
+    <p class="body-text">
+        Seu e-mail foi confirmado e sua conta na <strong>{{ store_name }}</strong> está ativa.
+        Agora você pode montar seu carrinho, acompanhar seus pedidos e guardar seus endereços
+        para comprar com mais rapidez.
+    </p>
+
+    <div class="info-box plain">
+        <p class="info-box-title">Para começar</p>
+        <p class="info-box-text">
+            Complete seu perfil e cadastre um endereço de entrega — assim o frete
+            é calculado na hora e o checkout fica a poucos cliques.
+        </p>
+    </div>
+
+    {% include "core/emails/_cta.html" with url=store_url label="Conhecer a loja" secondary_url=client_orders_url secondary_label="Minha conta" %}
+
+    <div class="closing-note">
+        <p class="script">Seja bem-vinda(o) ao movimento.</p>
+        <p class="team">Equipe {{ store_name }}</p>
+    </div>
+
+{% endblock %}

@@ -2,6 +2,7 @@
 Auth Services — autenticação, login, logout, refresh token.
 """
 from django.contrib.auth import authenticate
+from django.db import transaction
 from ninja_jwt.tokens import RefreshToken
 from ninja_jwt.settings import api_settings as jwt_api_settings
 
@@ -86,6 +87,12 @@ def refresh_access_token(refresh_token: str) -> dict:
         raise InvalidToken()
 
 
+def _notify_password_changed(user: User) -> None:
+    """Aviso de segurança por e-mail: quem não fez a troca precisa saber na hora."""
+    from luxury_fashion.apps.accounts.tasks.account_notifications import send_password_changed_email
+    transaction.on_commit(lambda: send_password_changed_email.delay(str(user.pk)), robust=True)
+
+
 def change_password(user: User, old_password: str, new_password: str, user_agent: str = "") -> dict:
     """
     Troca a senha e invalida todos os refresh tokens ativos do usuário.
@@ -98,6 +105,7 @@ def change_password(user: User, old_password: str, new_password: str, user_agent
     user.save(update_fields=["password"])
 
     revoke_all_tokens(user)
+    _notify_password_changed(user)
     return make_tokens(user, user_agent=user_agent)
 
 
@@ -131,6 +139,7 @@ def confirm_password_reset(uidb64: str, token: str, new_password: str) -> None:
     user.save(update_fields=["password"])
 
     revoke_all_tokens(user)
+    _notify_password_changed(user)
 
 
 

@@ -2,11 +2,12 @@
 Product endpoints — vitrine/busca pública e CRUD administrativo.
 """
 import uuid
+from decimal import Decimal
 from typing import List, Optional
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_ratelimit.decorators import ratelimit
-from ninja import File, Form, Router, UploadedFile
+from ninja import File, Form, Router, Status, UploadedFile
 from pydantic import ValidationError as PydanticValidationError
 
 from luxury_fashion.apps.core.exceptions import (
@@ -17,6 +18,7 @@ from luxury_fashion.apps.core.exceptions import (
     ShippingAlreadyExists,
     VariantAlreadyExists,
 )
+from luxury_fashion.apps.core.exceptions.products_exception import ProductInUse
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth
 from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut, PageOut
 from luxury_fashion.apps.core.utils.pagination import PAGE_SIZE_DEFAULT, paginate_queryset
@@ -24,6 +26,7 @@ from luxury_fashion.apps.products.schemas.product_enums_schema import (
     ProductColorEnum,
     ProductGenderEnum,
     ProductSizeEnum,
+    ProductSortEnum,
 )
 from luxury_fashion.apps.products.schemas.product_schema import (
     ProductCreateFullIn,
@@ -55,7 +58,7 @@ router = Router()
     summary="Lista/busca produtos na vitrine (paginado)",
     description=(
         "Endpoint público da vitrine. Sempre retorna apenas produtos ativos. "
-        "Suporta busca textual e filtros por categoria, gênero, tamanho, cor e estoque."
+        "Suporta busca textual e filtros por categoria, gênero, tamanho, cor, estoque e faixa de preço (`min_price`/`max_price`; os critérios de tamanho/cor/estoque/preço valem para a MESMA variante). Ordenação (`sort`): recent, name, price_asc, price_desc, rating."
     ),
 )
 @ratelimit(key="ip", rate="60/m", block=True)
@@ -69,7 +72,9 @@ def list_products_router(
     size: Optional[ProductSizeEnum] = None,
     color: Optional[ProductColorEnum] = None,
     in_stock_only: bool = False,
-    sort: Optional[str] = None,
+    min_price: Optional[Decimal] = None,
+    max_price: Optional[Decimal] = None,
+    sort: Optional[ProductSortEnum] = None,
 ):
     qs = search_products_queryset(
         search=search,
@@ -79,9 +84,11 @@ def list_products_router(
         color=color.value if color else None,
         in_stock_only=in_stock_only,
         active_only=True,
-        sort=sort,
+        sort=sort.value if sort else None,
+        min_price=min_price,
+        max_price=max_price,
     )
-    return 200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm))
 
 @router.post(
     "/full",
@@ -114,23 +121,23 @@ def create_product_full_router(
     try:
         data = ProductCreateFullIn.model_validate_json(payload)
     except PydanticValidationError as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
 
     try:
         product = create_product_full_for_admin(data, images=images, cover_index=cover_index)
-        return 201, product
+        return Status(201, product)
     except CategoryNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except ProductNameAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except VariantAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except ShippingAlreadyExists as e:
-        return 409, {"detail": str(e)}
+        return Status(409, {"detail": str(e)})
     except InvalidImageFile as e:
-        return 400, {"detail": str(e)}
+        return Status(400, {"detail": str(e)})
     except DjangoValidationError as e:
-        return 400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)}
+        return Status(400, {"detail": "; ".join(e.messages) if hasattr(e, "messages") else str(e)})
 
 
 
@@ -143,9 +150,9 @@ def create_product_full_router(
 @ratelimit(key="ip", rate="60/m", block=True)
 def detail_product_router(request, product_id: uuid.UUID):
     try:
-        return 200, get_product_for_all(product_id)
+        return Status(200, get_product_for_all(product_id))
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 # ── Painel administrativo ─────────────────────────────────────────────────────
@@ -178,7 +185,7 @@ def list_products_admin_router(
         in_stock_only=in_stock_only,
         active_only=active_only,
     )
-    return 200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm)
+    return Status(200, paginate_queryset(qs, page, page_size, ProductListOut.from_orm))
 
 
 # ── Escrita (admin) ───────────────────────────────────────────────────────────
@@ -194,9 +201,9 @@ def list_products_admin_router(
 def update_product_router(request, product_id: uuid.UUID, payload: ProductUpdateIn):
     try:
         product = update_product_for_admin(product_id, payload)
-        return 200, product
+        return Status(200, product)
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
     except (CategoryNotFound, ProductNameAlreadyExists) as e:
         status = 404 if isinstance(e, CategoryNotFound) else 409
         return status, {"detail": str(e)}
@@ -204,17 +211,20 @@ def update_product_router(request, product_id: uuid.UUID, payload: ProductUpdate
 
 @router.delete(
     "/{product_id}",
-    response={200: MessageOut, 404: MessageOut},
+    response={200: MessageOut, 404: MessageOut, 409: MessageOut},
     auth=AdminOnlyAuth(),
     summary="Exclui um produto",
+    description="Produto com variantes já vendidas não pode ser excluído (409) — desative-o.",
 )
 @ratelimit(key="user", rate="20/h", block=True)
 def delete_product_router(request, product_id: uuid.UUID):
     try:
         delete_product_for_admin(product_id)
-        return 200, {"detail": "Produto excluído com sucesso."}
+        return Status(200, {"detail": "Produto excluído com sucesso."})
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
+    except ProductInUse as e:
+        return Status(409, {"detail": str(e)})
 
 
 @router.post(
@@ -226,9 +236,9 @@ def delete_product_router(request, product_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def activate_product_router(request, product_id: uuid.UUID):
     try:
-        return 200, activate_product_for_admin(product_id)
+        return Status(200, activate_product_for_admin(product_id))
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})
 
 
 @router.post(
@@ -240,6 +250,6 @@ def activate_product_router(request, product_id: uuid.UUID):
 @ratelimit(key="user", rate="30/h", block=True)
 def deactivate_product_router(request, product_id: uuid.UUID):
     try:
-        return 200, deactivate_product_for_admin(product_id)
+        return Status(200, deactivate_product_for_admin(product_id))
     except ProductNotFound as e:
-        return 404, {"detail": str(e)}
+        return Status(404, {"detail": str(e)})

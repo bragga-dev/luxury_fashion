@@ -33,7 +33,7 @@ class Order(models.Model):
 
     order_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="orders")
-    shipping_address = models.ForeignKey("accounts.AddressesClient", on_delete=models.PROTECT, related_name="orders", help_text=_("Snapshot do endereço no momento da compra."),)
+    shipping_address = models.ForeignKey("accounts.AddressesClient", on_delete=models.PROTECT, related_name="orders", help_text=_("Endereço de entrega. Linha imutável depois do pedido: edição/exclusão pelo cliente arquiva a linha e cria outra (ver address_service)."),)
     code = models.CharField(_("Código"), max_length=12, default=generate_random_code, editable=False, unique=True)
     order_status = models.CharField(_("Status"), max_length=15, choices=StatusOrder.choices, default=StatusOrder.PENDING)
     total_geral = models.DecimalField(_("Preço total"), max_digits=10, decimal_places=2, default=0)
@@ -53,6 +53,7 @@ class Order(models.Model):
     shipping_label_url = models.URLField(blank=True, null=True)
     shipping_status = models.CharField(max_length=30, choices=ShippingStatus.choices, default=ShippingStatus.PENDING)
     shipped_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(_("Entregue em"), blank=True, null=True)
 
     class Meta:
         verbose_name = _("Pedido")
@@ -62,6 +63,7 @@ class Order(models.Model):
             models.Index(fields=["order_status"]),
             models.Index(fields=["created_at"]),
             models.Index(fields=["user_id"]),
+            models.Index(fields=["shipping_status"]),
         ]
 
     def __str__(self):
@@ -101,3 +103,8 @@ class Order(models.Model):
         self._ensure_transition_allowed(self.StatusOrder.REFUNDED)
         self.order_status = self.StatusOrder.REFUNDED
         self.save(update_fields=["order_status", "updated_at"])
+
+    def mark_delivered(self) -> None:
+        self.shipping_status = self.ShippingStatus.DELIVERED
+        self.delivered_at = self.delivered_at or timezone.now()
+        self.save(update_fields=["shipping_status", "delivered_at", "updated_at"])

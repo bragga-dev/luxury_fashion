@@ -41,6 +41,15 @@ from luxury_fashion.apps.core.exceptions.products_exception import (
 )
 from luxury_fashion.apps.core.exceptions.campaign_exception import CampaignNotFound, CampaignTitleAlreadyExists, CampaignImageNotFound
 
+from luxury_fashion.apps.core.exceptions.notification_exception import NotificationNotFound
+
+from luxury_fashion.apps.core.exceptions.chat_exception import (
+    ConversationNotFound,
+    MessageNotFound,
+    EmptyMessage,
+    TooManyAttachments,
+)
+
 __all__ = [
     
     "InvalidCredentials",
@@ -91,6 +100,13 @@ __all__ = [
     "CampaignNotFound",
     "CampaignTitleAlreadyExists",
     "CampaignImageNotFound",
+    
+    "NotificationNotFound",
+
+    "ConversationNotFound",
+    "MessageNotFound",
+    "EmptyMessage",
+    "TooManyAttachments",
 
 
 ]

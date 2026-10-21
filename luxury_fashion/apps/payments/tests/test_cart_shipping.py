@@ -23,11 +23,11 @@ def test_quote_devolve_so_opcoes_validas_e_cota_todos_os_itens(client, user, car
 
 
 def test_quote_nao_grava_nada_no_carrinho(client, user, cart, cart_item, variant_shipping, frenet_calls):
-    antes = (cart.total_shipping, cart.total_geral)
+    antes = cart.total_price
     client.post("/api/cart/shipping/quote", data={"recipient_cep": "45200000"},
                 content_type="application/json", **auth_header(user))
     cart.refresh_from_db()
-    assert (cart.total_shipping, cart.total_geral) == antes
+    assert cart.total_price == antes
 
 
 def test_nao_existe_rota_para_gravar_frete_no_carrinho(client, user, cart, cart_item):

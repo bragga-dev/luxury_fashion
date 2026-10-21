@@ -56,3 +56,11 @@ class ProductColorEnum(str, Enum):
     NAVY = Product.ProductColor.NAVY.value
     WINE = Product.ProductColor.WINE.value
     OFF_WHITE = Product.ProductColor.OFF_WHITE.value
+
+
+class ProductSortEnum(str, Enum):
+    RECENT = "recent"
+    NAME = "name"
+    PRICE_ASC = "price_asc"
+    PRICE_DESC = "price_desc"
+    RATING = "rating"

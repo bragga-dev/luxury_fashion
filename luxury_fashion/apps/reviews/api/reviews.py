@@ -15,12 +15,13 @@ from luxury_fashion.apps.core.exceptions.service_exception import (
     OrderItemNotReviewable,
 )
 from luxury_fashion.apps.core.permissions.auth_classes import AdminOnlyAuth, ClientOnlyAuth
-from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut
+from luxury_fashion.apps.core.schemas.deafult_schema import MessageOut, PageOut
+from luxury_fashion.apps.core.utils.pagination import PAGE_SIZE_DEFAULT
 from luxury_fashion.apps.reviews.schemas.reviews_schema import (
     ProductRatingSummaryOut,
     ReviewsCreateIn,
-    ReviewsOut,
     ReviewsPrivateOut,
+    ReviewsPublicOut,
     ReviewsUpdateIn,
 )
 from luxury_fashion.apps.reviews.services.reviews_service import (
@@ -127,12 +128,13 @@ def delete_my_review_router(request, reviews_id: uuid.UUID):
 
 @router.get(
     "/products/{product_id}",
-    response={200: list[ReviewsOut]},
+    response={200: PageOut[ReviewsPublicOut]},
     auth=None,
-    summary="Lista as avaliações autorizadas (públicas) de um produto",
+    summary="Lista as avaliações autorizadas (públicas) de um produto (paginado)",
 )
-def list_product_reviews_router(request, product_id: uuid.UUID):
-    return Status(200, list_public_reviews_for_product(product_id))
+@ratelimit(key="ip", rate="60/m", block=True)
+def list_product_reviews_router(request, product_id: uuid.UUID, page: int = 1, page_size: int = PAGE_SIZE_DEFAULT):
+    return Status(200, list_public_reviews_for_product(product_id, page, page_size))
 
 
 @router.get(
@@ -141,16 +143,18 @@ def list_product_reviews_router(request, product_id: uuid.UUID):
     auth=None,
     summary="Média e total de avaliações autorizadas de um produto",
 )
+@ratelimit(key="ip", rate="60/m", block=True)
 def get_product_rating_summary_router(request, product_id: uuid.UUID):
     return Status(200, get_product_rating_summary(product_id))
 
 
 @router.get(
     "/order-items/{order_item_id}",
-    response={200: list[ReviewsOut]},
+    response={200: list[ReviewsPublicOut]},
     auth=None,
     summary="Avaliação pública (se houver e estiver autorizada) de um item de pedido específico",
 )
+@ratelimit(key="ip", rate="60/m", block=True)
 def list_order_item_reviews_router(request, order_item_id: uuid.UUID):
     return Status(200, list_public_reviews_for_order_item(order_item_id))
 

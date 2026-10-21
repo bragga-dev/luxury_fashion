@@ -1,6 +1,6 @@
 """
 Webhooks públicos da Frenet (status e tracking). Quem chama é a Frenet, por isso
-`auth=None`; a segurança é o header opcional configurado em FRENET_WEBHOOK_TOKEN_*.
+`auth=None`; a segurança é o segredo FRENET_WEBHOOK_TOKEN_VALUE, aceito na query string (?token=) ou no header.
 Sempre respondemos 2xx para eventos válidos (a Frenet exige resposta em < 10s e
 trata 3xx/erro como falha).
 """
@@ -38,7 +38,7 @@ class FrenetTrackingWebhookIn(Schema):
              summary="Webhook Frenet — atualização de status do envio")
 @ratelimit(key="ip", rate="120/m", block=True)
 def frenet_status_webhook(request, payload: FrenetStatusWebhookIn):
-    if not is_valid_webhook_token(request.headers):
+    if not is_valid_webhook_token(request.headers, request.GET):
         logger.warning("Webhook Frenet (status) recusado: token inválido.")
         return Status(401, {"detail": "Token inválido."})
     try:
@@ -53,7 +53,7 @@ def frenet_status_webhook(request, payload: FrenetStatusWebhookIn):
              summary="Webhook Frenet — atualização de tracking")
 @ratelimit(key="ip", rate="120/m", block=True)
 def frenet_tracking_webhook(request, payload: FrenetTrackingWebhookIn):
-    if not is_valid_webhook_token(request.headers):
+    if not is_valid_webhook_token(request.headers, request.GET):
         logger.warning("Webhook Frenet (tracking) recusado: token inválido.")
         return Status(401, {"detail": "Token inválido."})
     try:

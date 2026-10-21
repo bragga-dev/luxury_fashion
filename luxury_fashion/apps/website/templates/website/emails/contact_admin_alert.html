@@ -1,0 +1,46 @@
+{% extends "core/emails/base.html" %}
+
+{% block title %}Novo contato: {{ contact_subject }} — {{ store_name }}{% endblock %}
+
+{% block preheader %}{{ contact_name }} enviou uma mensagem pelo formulário de contato.{% endblock %}
+
+{% block content %}
+
+    <span class="section-label gold">Novo contato</span>
+    <h1 class="heading">Mensagem recebida</h1>
+    <div class="rule"></div>
+
+    <p class="body-text">
+        Uma nova mensagem chegou pelo formulário de contato do site.
+    </p>
+
+    <div class="info-box gold">
+        <p class="info-box-title">Remetente</p>
+
+        <div class="payment-row">
+            <span class="payment-label">Nome</span><br>
+            <span class="payment-value">{{ contact_name }}</span>
+        </div>
+        <div class="payment-row">
+            <span class="payment-label">E-mail</span><br>
+            <span class="payment-value"><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></span>
+        </div>
+        {% if contact_phone %}
+        <div class="payment-row">
+            <span class="payment-label">Telefone</span><br>
+            <span class="payment-value">{{ contact_phone }}</span>
+        </div>
+        {% endif %}
+        <div class="payment-row">
+            <span class="payment-label">Assunto</span><br>
+            <span class="payment-value">{{ contact_subject }}</span>
+        </div>
+    </div>
+
+    <div class="message-box">
+        <p>{{ contact_message|linebreaksbr }}</p>
+    </div>
+
+    {% include "core/emails/_cta.html" with url=reply_url label="Responder" %}
+
+{% endblock %}

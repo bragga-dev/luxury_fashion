@@ -2,7 +2,7 @@ import uuid
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+from django.core.validators import MaxValueValidator, MinValueValidator
 from luxury_fashion.apps.core.validators.image_validator import validate_image_file
 
 
@@ -17,6 +17,12 @@ class CampaignImage(models.Model):
     image = models.ImageField(_("Banner"), upload_to=campaign_image_path, validators=[validate_image_file])
     is_cover = models.BooleanField(_("Imagem principal"), default=False)
     display_order = models.PositiveIntegerField(_("Ordem"), default=0)
+    fit = models.CharField(max_length=7, choices=[("cover", "Preencher"), ("contain", "Mostrar inteira")], default="cover")
+    focus_x = models.PositiveSmallIntegerField(default=50, validators=[MaxValueValidator(100)])
+    focus_y = models.PositiveSmallIntegerField(default=50, validators=[MaxValueValidator(100)])
+    zoom = models.FloatField(default=1.0, validators=[MinValueValidator(1.0), MaxValueValidator(3.0)])
+    title = models.CharField(max_length=120, blank=True, default="")
+    subtitle = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(_("Criada em"), auto_now_add=True)
 
     class Meta:

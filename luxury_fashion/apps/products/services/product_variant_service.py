@@ -5,12 +5,17 @@ para a camada de API.
 """
 import uuid
 
+from django.db import transaction
+from django.db.models import ProtectedError
+
 from luxury_fashion.apps.core.exceptions.cart_exception import InsufficientStock
 from luxury_fashion.apps.core.exceptions.products_exception import (
     ProductNotFound,
     VariantAlreadyExists,
+    VariantInUse,
     VariantNotFound,
 )
+from luxury_fashion.apps.products.models.product_variant_model import ProductVariant
 from luxury_fashion.apps.products.repositories.product_variant_repository import (
     activate_variant,
     adjust_variant_stock,
@@ -109,7 +114,11 @@ def update_variant_for_admin(variant_id: uuid.UUID, data: VariantUpdateIn) -> Va
 
 def delete_variant_for_admin(variant_id: uuid.UUID) -> None:
     variant = _get_variant_or_raise(variant_id=variant_id)
-    delete_variant(variant=variant)
+    try:
+        delete_variant(variant=variant)
+    except ProtectedError:
+        # Já vendida (OrderItem.variant_id é PROTECT): histórico fiscal não pode sumir.
+        raise VariantInUse()
 
 
 def activate_variant_for_admin(variant_id: uuid.UUID) -> VariantOut:
@@ -124,19 +133,32 @@ def deactivate_variant_for_admin(variant_id: uuid.UUID) -> VariantOut:
     return VariantOut.from_orm(variant)
 
 
+def _get_variant_locked_or_raise(variant_id: uuid.UUID):
+    """
+    Variante com a linha TRAVADA (select_for_update) — só chamar dentro de transaction.atomic.
+    O estoque é lido e gravado aqui; sem o lock, uma confirmação de pagamento (que também trava a
+    linha e debita) rodando ao mesmo tempo seria sobrescrita (lost update).
+    """
+    variant = ProductVariant.objects.select_for_update().select_related("product_id").filter(variant_id=variant_id).first()
+    if variant is None:
+        raise VariantNotFound()
+    return variant
+
+
+@transaction.atomic
 def adjust_variant_stock_for_admin(variant_id: uuid.UUID, delta: int) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id=variant_id)
+    variant = _get_variant_locked_or_raise(variant_id=variant_id)
     if variant.stock + delta < 0:
         raise InsufficientStock()
     variant = adjust_variant_stock(variant=variant, delta=delta)
     return VariantOut.from_orm(variant)
 
 
+@transaction.atomic
 def set_variant_stock_for_admin(variant_id: uuid.UUID, stock: int) -> VariantOut:
-    variant = _get_variant_or_raise(variant_id=variant_id)
-
     if stock < 0:
         raise InsufficientStock()
 
+    variant = _get_variant_locked_or_raise(variant_id=variant_id)
     variant = set_variant_stock(variant=variant, stock=stock)
     return VariantOut.from_orm(variant)
